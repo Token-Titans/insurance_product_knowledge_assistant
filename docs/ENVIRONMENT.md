@@ -12,6 +12,14 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 
 `NEXT_PUBLIC_*` values are visible in the browser and must never contain secrets.
 
+Vercel production and preview environments use:
+
+```dotenv
+NEXT_PUBLIC_API_BASE_URL=https://13.250.105.96
+```
+
+Production web URL: `https://insureassist-cyan.vercel.app`
+
 ## API
 
 Location: `services/api/.env.example`
@@ -47,6 +55,8 @@ Do not add actual values to documentation or source control. AI and n8n credenti
 
 GitHub Actions deployment configuration is documented in `docs/DEPLOYMENT.md`. Production secrets must stay in GitHub Actions secrets or the root-owned server environment file.
 
+Production CORS includes `https://insureassist-cyan.vercel.app` and the local development origin.
+
 ## Validation
 
 ```bash
@@ -60,4 +70,4 @@ pip install -r requirements.txt
 pytest
 ```
 
-Deployment targets are Netlify for the web app, the documented Ubuntu host for FastAPI, and n8n Cloud or a hackathon environment for any future automation.
+Deployment targets are Vercel for the web app, the documented Ubuntu host for FastAPI, and n8n Cloud or a hackathon environment for any future automation.

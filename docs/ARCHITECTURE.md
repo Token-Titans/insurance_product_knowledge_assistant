@@ -52,11 +52,13 @@ The exact model and retrieval implementation will be decided during feature deve
 
 ## Deployment targets
 
-- Next.js → Netlify.
+- Next.js → Vercel, with `main` as the production branch.
 - FastAPI → Ubuntu host at `13.250.105.96`, managed by systemd and exposed through Nginx HTTPS.
 - n8n → n8n Cloud or the hackathon environment.
 
 Backend changes merged to `main` are tested and deployed by GitHub Actions. Releases are uploaded over SSH, activated through an atomic `current` symlink, health-checked, and rolled back on failure. See `docs/DEPLOYMENT.md`.
+
+Frontend changes are linted and built by GitHub Actions. Vercel's Git integration creates previews for pull requests and deploys `main` to production. The browser receives the public FastAPI HTTPS base URL through `NEXT_PUBLIC_API_BASE_URL`.
 
 ## Constraints
 

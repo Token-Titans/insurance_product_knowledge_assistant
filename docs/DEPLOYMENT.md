@@ -1,4 +1,27 @@
-# Backend Deployment
+# Deployment
+
+## Frontend
+
+The Next.js app deploys from `apps/web` through Vercel's Git integration.
+
+- Pull requests run frontend lint/build checks and receive Vercel preview deployments.
+- Every push to `main` creates a production deployment.
+- `.github/workflows/web-ci.yml` must pass lint and build checks.
+- `NEXT_PUBLIC_API_BASE_URL=https://13.250.105.96` is configured in Vercel for production and preview.
+- Production URL: `https://insureassist-cyan.vercel.app`
+
+Vercel project settings:
+
+```text
+Framework: Next.js
+Project: insureassist
+Root directory: apps/web
+Production branch: main
+```
+
+The Vercel origin must also be present in the backend's explicit `CORS_ORIGINS` setting.
+
+## Backend
 
 The production API runs on the Ubuntu host at `13.250.105.96`. Nginx terminates HTTPS and proxies to Uvicorn on `127.0.0.1:8000`.
 
@@ -46,10 +69,10 @@ Runtime secrets and production settings belong in `/etc/insureassist-api.env`, r
 
 ```dotenv
 APP_ENV=production
-CORS_ORIGINS=http://localhost:3000
+CORS_ORIGINS=https://insureassist-cyan.vercel.app,http://localhost:3000
 ```
 
-Replace `CORS_ORIGINS` with the deployed Netlify origin before browser integration.
+Keep `CORS_ORIGINS` synchronized with the stable Vercel production alias.
 
 ## HTTPS
 
