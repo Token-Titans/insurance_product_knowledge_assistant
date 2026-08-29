@@ -29,6 +29,20 @@ def test_ask_product_a_hospitalization() -> None:
     assert body["confidence"] > 0.0
 
 
+def test_ask_accepts_every_catalog_product() -> None:
+    # Catalog ids come from markdown frontmatter while retrieval resolves them to
+    # filenames, so the two can drift apart and 404 every listed product.
+    product_ids = [item["id"] for item in client.get("/products").json()]
+
+    assert product_ids
+    for product_id in product_ids:
+        response = client.post(
+            "/assistant/ask",
+            json={"product_id": product_id, "question": HOSPITAL_QUESTION},
+        )
+        assert response.status_code == 200, product_id
+
+
 def test_ask_unknown_product() -> None:
     response = client.post(
         "/assistant/ask",
