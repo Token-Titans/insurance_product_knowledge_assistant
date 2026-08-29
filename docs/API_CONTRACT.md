@@ -1,12 +1,12 @@
 # API Contract
 
-Base path: `/api/v1`
+Frozen frontend contract. Do not change request, response, path, or error shapes silently.
 
-`GET /api/v1/health` and `POST /api/v1/assistant/ask` are implemented. Compare remains planned.
+Unprefixed paths are canonical. The same handlers are also served under `/api/v1`.
 
 ## Health
 
-`GET /api/v1/health`
+`GET /health`
 
 **Status: IMPLEMENTED**
 
@@ -15,13 +15,48 @@ Response:
 ```json
 {
   "status": "ok",
-  "service": "insureassist-api"
+  "service": "insurance-assistant"
 }
 ```
 
+## Products
+
+`GET /products`
+
+**Status: IMPLEMENTED**
+
+Response:
+
+```json
+[
+  {
+    "id": "family-care",
+    "name": "Family Care",
+    "category": "Health"
+  }
+]
+```
+
+`GET /products/{id}`
+
+**Status: IMPLEMENTED**
+
+Response:
+
+```json
+{
+  "id": "family-care",
+  "name": "Family Care",
+  "summary": "...",
+  "benefits": ["..."]
+}
+```
+
+Unknown ids return HTTP 404 with `PRODUCT_NOT_FOUND`.
+
 ## Ask Product Question
 
-`POST /api/v1/assistant/ask`
+`POST /assistant/ask`
 
 **Status: IMPLEMENTED**
 
@@ -29,34 +64,36 @@ Request:
 
 ```json
 {
-  "question": "What is the hospitalization benefit?",
-  "product_ids": ["product-a"]
+  "question": "I am 30 years old. Which insurance is suitable?"
 }
 ```
 
 - `question` is required (1–2000 characters).
-- `product_ids` is optional. Supported values: `product-a`, `product-b`. Unknown IDs return `UNKNOWN_PRODUCT`. When omitted, approved documents for all supported products are searched.
 
 Response:
 
 ```json
 {
-  "answer": "Product A provides...",
-  "important_points": ["..."],
-  "conditions": ["..."],
+  "answer": "Recommended product is Family Care...",
   "sources": [
     {
-      "document": "Product A Brochure",
-      "section": "Hospital Benefits"
+      "title": "Family Care Brochure",
+      "file": "family_care.md",
+      "section": "Eligibility"
     }
   ],
-  "confidence": "grounded"
+  "recommended_products": [
+    {
+      "id": "family-care",
+      "name": "Family Care"
+    }
+  ]
 }
 ```
 
-`confidence` is `"grounded"` when approved sources support the answer, or `"unavailable"` when they do not. Unavailable information is still HTTP 200 with a safe message and empty `sources`.
+`sources` are copied from retrieved markdown only. They are never invented. When `OPENAI_API_KEY` is unset, the API still answers from retrieved sections.
 
-When `OPENAI_API_KEY` is not set, the API still answers from retrieved approved sections (extractive fallback). With a key, the backend calls OpenAI and validates the structured result before returning it.
+Swagger UI: `http://localhost:8000/docs`
 
 ## Compare Products
 
@@ -79,10 +116,10 @@ Product endpoints use:
 }
 ```
 
-Ask endpoint error codes:
+Error codes:
 
 - `INVALID_REQUEST` — missing or invalid body (HTTP 400 or 422).
-- `UNKNOWN_PRODUCT` — `product_ids` contains an unsupported id (HTTP 400).
+- `PRODUCT_NOT_FOUND` — unknown product id (HTTP 404).
 - `HTTP_ERROR` — other HTTP errors.
 
 ## API governance

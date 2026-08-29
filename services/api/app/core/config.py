@@ -18,7 +18,10 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     cors_origins: Annotated[list[str], NoDecode] = Field(
-        default_factory=lambda: ["http://localhost:3000"]
+        default_factory=lambda: [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
     )
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"

@@ -3,9 +3,11 @@
 ## Scope
 
 - Keep all API work inside `services/api`.
-- Preserve the `/api/v1` route prefix.
+- Canonical routes: `/health`, `/products`, `/products/{id}`, `/assistant/ask`.
+- The same handlers are mounted under `/api/v1` for compatibility.
 - Keep configuration in `app/core/config.py` and load values from environment variables.
 - Define Pydantic response models for API responses.
+- Swagger UI is at `/docs`.
 
 ## Commands
 
@@ -14,10 +16,10 @@
 
 ## Implemented
 
-- `GET /api/v1/health`
-- `POST /api/v1/assistant/ask` — grounded product answers from approved markdown in
-  `app/knowledge/approved/`. OpenAI is used when `OPENAI_API_KEY` is set; otherwise
-  the service returns an extractive answer from retrieved sections.
+- `GET /health`
+- `GET /products` and `GET /products/{id}`
+- `POST /assistant/ask` — grounded answers from `app/knowledge/approved/`.
+  OpenAI is used when `OPENAI_API_KEY` is set; otherwise extractive retrieval.
 
 ## Boundaries
 

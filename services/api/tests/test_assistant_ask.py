@@ -1,111 +1,88 @@
-"""Tests for POST /api/v1/assistant/ask."""
+"""Tests for POST /assistant/ask."""
 
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.models.assistant import AskResponse, SourceReference
 
 client = TestClient(app)
 
-DEMO_QUESTION = "What hospitalization benefits does Product A provide?"
+SUITABILITY_QUESTION = "I am 30 years old. Which insurance is suitable?"
 
 
-def test_ask_product_a_hospital_benefits() -> None:
+def test_ask_suitability_returns_sources_and_products() -> None:
     response = client.post(
-        "/api/v1/assistant/ask",
-        json={"question": DEMO_QUESTION, "product_ids": ["product-a"]},
+        "/assistant/ask",
+        json={"question": SUITABILITY_QUESTION},
     )
 
     assert response.status_code == 200
     body = response.json()
-    assert body["confidence"] == "grounded"
-    assert "RM300" in body["answer"] or "room and board" in body["answer"].lower()
+    assert body["answer"]
     assert body["sources"]
-    documents = {item["document"] for item in body["sources"]}
-    assert "Product A Brochure" in documents or "Product A Benefit Table" in documents
-    sections = {item["section"] for item in body["sources"]}
-    assert "Hospital Benefits" in sections
-    assert any(
-        "waiting" in item.lower() or "exclusion" in item.lower() or "not" in item.lower()
-        for item in body["conditions"] + body["important_points"] + [body["answer"]]
+    files = {item["file"] for item in body["sources"]}
+    assert files <= {"family_care.md", "hospital_cash.md", "income_protect.md"}
+    for source in body["sources"]:
+        assert source["title"]
+        assert source["section"]
+    ids = {item["id"] for item in body["recommended_products"]}
+    assert "family-care" in ids or "hospital-cash" in ids or "income-protect" in ids
+
+
+def test_ask_v1_alias() -> None:
+    response = client.post(
+        "/api/v1/assistant/ask",
+        json={"question": "What hospitalisation benefits does Family Care provide?"},
     )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "sources" in body
+    assert "recommended_products" in body
+    assert "important_points" not in body
 
 
 def test_ask_unavailable_information() -> None:
     response = client.post(
-        "/api/v1/assistant/ask",
-        json={
-            "question": "What is the cryptocurrency wallet protection sublimit?",
-            "product_ids": ["product-a"],
-        },
+        "/assistant/ask",
+        json={"question": "What is the cryptocurrency wallet protection sublimit?"},
     )
 
     assert response.status_code == 200
     body = response.json()
-    assert body["confidence"] == "unavailable"
-    assert "do not contain" in body["answer"].lower() or "unavailable" in body["answer"].lower()
-    assert body["sources"] == []
-
-
-def test_ask_unknown_product_id() -> None:
-    response = client.post(
-        "/api/v1/assistant/ask",
-        json={"question": DEMO_QUESTION, "product_ids": ["product-z"]},
-    )
-
-    assert response.status_code == 400
-    assert response.json() == {
-        "detail": {
-            "code": "UNKNOWN_PRODUCT",
-            "message": (
-                "Unknown product_id 'product-z'. Use a supported product "
-                "such as product-a or product-b."
-            ),
-        }
-    }
+    assert "don't know" in body["answer"].lower() or "do not contain" in body["answer"].lower()
 
 
 def test_ask_empty_question() -> None:
-    response = client.post(
-        "/api/v1/assistant/ask",
-        json={"question": "   "},
-    )
+    response = client.post("/assistant/ask", json={"question": "   "})
 
     assert response.status_code == 400
     assert response.json()["detail"]["code"] == "INVALID_REQUEST"
 
 
 def test_ask_missing_question_field() -> None:
-    response = client.post("/api/v1/assistant/ask", json={})
+    response = client.post("/assistant/ask", json={})
 
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "INVALID_REQUEST"
 
 
 def test_ask_uses_openai_result_when_available(monkeypatch) -> None:
-    grounded = AskResponse(
-        answer="Product A pays room and board up to RM300 per day.",
-        important_points=["Room and board up to RM300 per day."],
-        conditions=["30-day waiting period except accidents."],
-        sources=[
-            SourceReference(
-                document="Product A Brochure",
-                section="Hospital Benefits",
-            )
-        ],
-        confidence="grounded",
-    )
+    async def fake_chat_json(messages, settings):
+        del messages, settings
+        return {
+            "answer": "Recommended product is Family Care for a 30-year-old working adult.",
+            "recommended_product_ids": ["family-care"],
+        }
 
-    monkeypatch.setattr(
-        "app.services.assistant.complete_answer",
-        lambda question, chunks, settings: grounded,
-    )
+    monkeypatch.setattr("app.services.assistant.chat_json", fake_chat_json)
 
     response = client.post(
-        "/api/v1/assistant/ask",
-        json={"question": DEMO_QUESTION, "product_ids": ["product-a"]},
+        "/assistant/ask",
+        json={"question": SUITABILITY_QUESTION},
     )
 
     assert response.status_code == 200
-    assert response.json()["answer"] == grounded.answer
-    assert response.json()["confidence"] == "grounded"
+    body = response.json()
+    assert body["answer"].startswith("Recommended product is Family Care")
+    assert body["recommended_products"][0]["id"] == "family-care"
+    assert body["sources"]

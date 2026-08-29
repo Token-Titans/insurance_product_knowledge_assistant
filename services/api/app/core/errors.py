@@ -14,12 +14,16 @@ class ApiError(HTTPException):
 
 
 def invalid_request(message: str) -> ApiError:
+    """Return HTTP 400 for a semantically invalid request."""
+
     return ApiError(status.HTTP_400_BAD_REQUEST, "INVALID_REQUEST", message)
 
 
-def unknown_product(product_id: str) -> ApiError:
+def product_not_found(product_id: str) -> ApiError:
+    """Return HTTP 404 when a product id is not in the approved corpus."""
+
     return ApiError(
-        status.HTTP_400_BAD_REQUEST,
-        "UNKNOWN_PRODUCT",
-        f"Unknown product_id '{product_id}'. Use a supported product such as product-a or product-b.",
+        status.HTTP_404_NOT_FOUND,
+        "PRODUCT_NOT_FOUND",
+        f"Unknown product '{product_id}'.",
     )
