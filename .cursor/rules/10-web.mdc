@@ -1,0 +1,15 @@
+---
+description: "Frontend conventions and ownership for the InsureAssist web app"
+globs: "apps/web/**"
+alwaysApply: false
+---
+
+# Web application
+
+- Follow the existing Next.js, TypeScript, and Tailwind conventions; keep components typed, focused, and reusable only where reuse is real.
+- The web app owns presentation, interaction, and short-lived UI state. Keep state local unless multiple existing consumers require shared state.
+- Use established API clients and contracts. Do not duplicate backend validation, product rules, retrieval, or AI business logic in the browser.
+- Never ship API keys, credentials, private endpoints, or server-only environment values to browser code.
+- Preserve existing routes, component ownership, and working flows unless the requested change requires otherwise.
+- Provide clear loading, empty, success, and recoverable error states for network-backed experiences.
+- Keep UX responsive and accessible: use semantic controls, keyboard support, visible focus, and concise sales-agent-oriented copy.

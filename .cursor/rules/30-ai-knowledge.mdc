@@ -1,0 +1,18 @@
+---
+description: "Grounding and safety rules for AI and product-knowledge services"
+globs: "{services/api/app/services/ai/**,services/api/app/services/knowledge/**}"
+alwaysApply: false
+---
+
+# AI and knowledge services
+
+- Ground product answers only in approved knowledge sources; never invent missing product details.
+- State when information is unknown, unavailable, conflicting, or outside the approved corpus.
+- Preserve material conditions, exclusions, eligibility limits, and caveats instead of flattening them into unconditional claims.
+- Include source identifiers or citations that let a sales agent verify factual claims.
+- Clearly distinguish retrieved facts from generated explanation, synthesis, or inference.
+- Keep model, embedding, and knowledge-store credentials on the backend.
+- Prefer structured outputs with explicit schemas and validate provider output before returning or persisting it.
+- Minimize provider calls, prompt complexity, and nondeterministic orchestration while meeting the request.
+- Do not build generic or autonomous agents; use narrow product-knowledge workflows.
+- Support sales agents with explainable information, not final coverage, legal, underwriting, or customer decisions.

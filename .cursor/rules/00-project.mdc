@@ -1,0 +1,15 @@
+---
+description: "Core InsureAssist hackathon scope and engineering constraints"
+alwaysApply: true
+---
+
+# Project guardrails
+
+- Treat InsureAssist as a four-hour hackathon: make the smallest change that delivers the requested value.
+- Read `AGENTS.md` and `docs/PRODUCT_SCOPE.md` before changing product behavior or architecture.
+- Keep the product limited to sales-agent product knowledge. Do not expand into claims, underwriting, policy administration, or final customer decisions.
+- Respect component ownership and preserve existing API contracts and public interfaces unless a requested change requires coordination.
+- Preserve working code, avoid unrelated refactors, and prefer reliability over elegance.
+- Never add secrets to source control or expose credentials in client code.
+- Add dependencies only when directly justified by the requested feature.
+- Do not introduce speculative infrastructure, authentication, complex databases, microservices, Kafka, Redis, Celery, message brokers, or Docker unless explicitly requested.
