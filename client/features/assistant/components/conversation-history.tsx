@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { History } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -14,11 +15,23 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-import type { AskHistoryItem } from "@/features/assistant/types/ask-screen.types";
+import type { ChatTurn } from "@/features/assistant/types/ask-screen.types";
 
 interface ConversationHistoryProps {
-  items: AskHistoryItem[];
-  onSelect: (item: AskHistoryItem) => void;
+  items: ChatTurn[];
+  onSelect: (id: string) => void;
+}
+
+function historyBadgeKey(status: ChatTurn["status"]) {
+  if (status === "answered") {
+    return "history.grounded";
+  }
+
+  if (status === "unavailable") {
+    return "history.unavailable";
+  }
+
+  return "history.error";
 }
 
 export function ConversationHistory({
@@ -27,9 +40,13 @@ export function ConversationHistory({
 }: ConversationHistoryProps) {
   const { t } = useTranslation("assistant");
   const { t: tCommon } = useTranslation("common");
+  const [isOpen, setIsOpen] = useState(false);
+  const visibleItems = [...items]
+    .filter((item) => item.status !== "pending")
+    .reverse();
 
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button
           type="button"
@@ -47,21 +64,22 @@ export function ConversationHistory({
           <SheetDescription>{tCommon("app.tagline")}</SheetDescription>
         </SheetHeader>
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4 pb-6">
-          {items.length === 0 ? (
+          {visibleItems.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("history.empty")}</p>
           ) : (
-            items.map((item) => (
+            visibleItems.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 className="rounded-xl bg-secondary p-3 text-left"
-                onClick={() => onSelect(item)}
+                onClick={() => {
+                  onSelect(item.id);
+                  setIsOpen(false);
+                }}
               >
                 <p className="font-myanmar text-sm">{item.question}</p>
                 <Badge className="mt-2" variant="outline">
-                  {item.outcome === "answered"
-                    ? t("history.grounded")
-                    : t("history.unavailable")}
+                  {t(historyBadgeKey(item.status))}
                 </Badge>
               </button>
             ))

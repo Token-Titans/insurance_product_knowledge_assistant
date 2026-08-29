@@ -53,7 +53,7 @@ Responsibilities:
 - Git integration and PR review.
 - API contract coordination.
 - Environment configuration.
-- Netlify and backend deployment.
+- Vercel and backend deployment.
 - End-to-end testing.
 - Demo preparation and scope management.
 - Integration bug fixing.

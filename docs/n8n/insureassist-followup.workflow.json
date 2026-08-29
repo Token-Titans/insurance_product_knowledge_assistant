@@ -1,0 +1,181 @@
+{
+  "name": "InsureAssist Follow-up Draft",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "insureassist-followup",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-followup",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "insureassist-followup"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "recipient_email",
+              "value": "={{ $json.body?.recipient_email || $json.recipient_email || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "f2",
+              "name": "agent_name",
+              "value": "={{ $json.body?.agent_name || $json.agent_name || 'Agent' }}",
+              "type": "string"
+            },
+            {
+              "id": "f3",
+              "name": "question",
+              "value": "={{ $json.body?.question || $json.question || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "f4",
+              "name": "answer",
+              "value": "={{ $json.body?.answer || $json.answer || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "f5",
+              "name": "confidence",
+              "value": "={{ $json.body?.confidence || $json.confidence || 'unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "f6",
+              "name": "important_points_text",
+              "value": "={{ ($json.body?.important_points || $json.important_points || []).map(p => '- ' + p).join('\\n') || '- None provided' }}",
+              "type": "string"
+            },
+            {
+              "id": "f7",
+              "name": "conditions_text",
+              "value": "={{ ($json.body?.conditions || $json.conditions || []).map(c => '- ' + c).join('\\n') || '- None provided' }}",
+              "type": "string"
+            },
+            {
+              "id": "f8",
+              "name": "sources_text",
+              "value": "={{ ($json.body?.sources || $json.sources || []).map(s => '- ' + s.document + ', ' + s.section).join('\\n') || '- No source cited' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "normalize-followup",
+      "name": "Normalize",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "g1",
+              "leftValue": "={{ $json.recipient_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "g2",
+              "leftValue": "={{ $json.confidence }}",
+              "rightValue": "grounded",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-grounded",
+      "name": "Grounded and addressed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@example.com",
+        "toEmail": "={{ $json.recipient_email }}",
+        "subject": "=Follow-up: {{ $json.question }}",
+        "emailFormat": "text",
+        "text": "={{ $json.answer }}\n\nKey points\n{{ $json.important_points_text }}\n\nConditions to mention\n{{ $json.conditions_text }}\n\nSource\n{{ $json.sources_text }}\n\nPrepared by InsureAssist for {{ $json.agent_name }}. Review before sending to a customer. Confirm against the approved product document; this is not an authoritative policy interpretation.",
+        "options": {}
+      },
+      "id": "send-draft",
+      "name": "Send Draft",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [700, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, message: 'Follow-up draft sent' }) }}",
+        "options": {}
+      },
+      "id": "respond-ok-followup",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [940, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, detail: { code: 'FOLLOW_UP_REFUSED', message: 'A recipient address is required and the answer must be grounded.' } }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "respond-refused",
+      "name": "Respond 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [700, 430]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]]
+    },
+    "Normalize": {
+      "main": [[{ "node": "Grounded and addressed?", "type": "main", "index": 0 }]]
+    },
+    "Grounded and addressed?": {
+      "main": [
+        [{ "node": "Send Draft", "type": "main", "index": 0 }],
+        [{ "node": "Respond 400", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Draft": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

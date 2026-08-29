@@ -10,7 +10,7 @@ This repository currently contains project scaffolding only. The only implemente
 
 ## Architecture and authority
 
-- `apps/web/`: Next.js App Router, TypeScript, and Tailwind; future Netlify deployment.
+- `apps/web/`: Next.js App Router, TypeScript, and Tailwind; Vercel deployment.
 - `services/api/`: FastAPI; future owner of business logic, retrieval, prompts, AI, document processing, secrets, and n8n calls.
 - n8n may later own follow-up automation, never product-knowledge logic.
 - `docs/PRODUCT_SCOPE.md` is the product boundary.

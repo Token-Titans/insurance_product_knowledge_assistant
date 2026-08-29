@@ -1,0 +1,139 @@
+name: Backend CI/CD
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "services/api/**"
+      - ".github/workflows/deploy-api.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "services/api/**"
+      - ".github/workflows/deploy-api.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-api
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/api/requirements.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest
+
+  deploy:
+    name: Deploy production API
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Package API
+        working-directory: services/api
+        run: |
+          tar \
+            --exclude="__pycache__" \
+            --exclude=".pytest_cache" \
+            --exclude=".venv" \
+            -czf "$RUNNER_TEMP/insureassist-api-${GITHUB_SHA}.tar.gz" .
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.PRODUCTION_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/deploy_key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/deploy_key" "$HOME/.ssh/known_hosts"
+
+      - name: Upload release
+        env:
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+          PRODUCTION_USER: ${{ secrets.PRODUCTION_USER }}
+        run: |
+          scp \
+            -i "$HOME/.ssh/deploy_key" \
+            "$RUNNER_TEMP/insureassist-api-${GITHUB_SHA}.tar.gz" \
+            "${PRODUCTION_USER}@${PRODUCTION_HOST}:/tmp/insureassist-api-${GITHUB_SHA}.tar.gz"
+
+      - name: Activate release
+        env:
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+          PRODUCTION_USER: ${{ secrets.PRODUCTION_USER }}
+        run: |
+          ssh -i "$HOME/.ssh/deploy_key" "${PRODUCTION_USER}@${PRODUCTION_HOST}" \
+            "GITHUB_SHA='${GITHUB_SHA}' DEPLOY_ID='${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+
+          app_root="/opt/insureassist-api"
+          archive="/tmp/insureassist-api-${GITHUB_SHA}.tar.gz"
+          release="${app_root}/releases/${DEPLOY_ID}"
+          previous="$(readlink -f "${app_root}/current" || true)"
+
+          cleanup() {
+            rm -f "$archive"
+          }
+          trap cleanup EXIT
+
+          install -d "${app_root}/releases"
+          rm -rf "$release"
+          install -d "$release"
+          tar -xzf "$archive" -C "$release"
+
+          python3 -m venv "${release}/.venv"
+          "${release}/.venv/bin/python" -m pip install \
+            --disable-pip-version-check \
+            -r "${release}/requirements.txt"
+
+          ln -sfn "$release" "${app_root}/current.next"
+          mv -Tf "${app_root}/current.next" "${app_root}/current"
+          sudo systemctl restart insureassist-api
+
+          healthy=false
+          for attempt in 1 2 3 4 5 6; do
+            if curl --fail --silent http://127.0.0.1:8000/api/v1/health > /dev/null; then
+              healthy=true
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$healthy" != true ]; then
+            if [ -n "$previous" ] && [ -d "$previous" ]; then
+              ln -sfn "$previous" "${app_root}/current.next"
+              mv -Tf "${app_root}/current.next" "${app_root}/current"
+              sudo systemctl restart insureassist-api
+            fi
+            echo "Production health check failed; previous release restored." >&2
+            exit 1
+          fi
+          REMOTE

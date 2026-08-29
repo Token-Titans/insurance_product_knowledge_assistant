@@ -1,10 +1,17 @@
-export const SUPPORTED_PRODUCTS = [
-  { id: "product-a", labelKey: "products.product_a" },
-  { id: "product-b", labelKey: "products.product_b" },
-] as const;
-
 export const SUGGESTED_QUESTIONS = [
-  { id: "hospital", labelKey: "suggested.hospital" },
-  { id: "exclusion", labelKey: "suggested.exclusion" },
-  { id: "unavailable", labelKey: "suggested.unavailable" },
+  {
+    id: "hospital",
+    titleKey: "suggested.hospital_title",
+    labelKey: "suggested.hospital",
+  },
+  {
+    id: "exclusion",
+    titleKey: "suggested.exclusion_title",
+    labelKey: "suggested.exclusion",
+  },
+  {
+    id: "unavailable",
+    titleKey: "suggested.unavailable_title",
+    labelKey: "suggested.unavailable",
+  },
 ] as const;
