@@ -20,7 +20,7 @@ FastAPI will own retrieval, prompts, AI calls, document processing, product logi
 
 ### 005 — Contract-first integration
 
-All API routes are published at `/health`, `/products`, `/products/{id}`, and `/assistant/ask` (frozen frontend contract). The same handlers are also mounted under `/api/v1`. Compare remains planned. Changes follow `docs/API_CONTRACT.md`.
+All API routes are published at `/health`, `/products`, `/products/{id}`, `/products/{id}/suggested-questions`, and `/assistant/ask` (frozen frontend contract). The same handlers are also mounted under `/api/v1`. Compare remains planned. Changes follow `docs/API_CONTRACT.md`.
 
 ### 006 — Approved documents are authoritative
 

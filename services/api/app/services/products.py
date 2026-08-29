@@ -1,8 +1,56 @@
 """Product catalog derived from approved markdown metadata."""
 
 from app.core.errors import product_not_found
-from app.models.assistant import ProductDetail, ProductSummary
+from app.models.assistant import ProductDetail, ProductSummary, SuggestedQuestion
 from app.services.retrieve import DocumentSection, load_documents
+
+_MAX_SUGGESTIONS = 5
+_FALLBACK_QUESTION = "What should a sales agent know about {name}?"
+# heading (lowercase) -> (id, title, question template). Only headings that
+# exist in the approved file are emitted, so prompts stay grounded.
+_QUESTION_BY_HEADING: dict[str, tuple[str, str, str]] = {
+    "hospitalization benefits": (
+        "hospitalization",
+        "Hospitalization",
+        "What hospitalization benefits does {name} provide?",
+    ),
+    "benefits": (
+        "benefits",
+        "Benefits",
+        "What benefits does {name} provide?",
+    ),
+    "eligibility": (
+        "eligibility",
+        "Eligibility",
+        "Who is eligible for {name}?",
+    ),
+    "coverage": (
+        "coverage",
+        "Coverage",
+        "What does {name} cover?",
+    ),
+    "important conditions": (
+        "conditions",
+        "Conditions",
+        "What important conditions apply to {name}?",
+    ),
+    "exclusions": (
+        "exclusions",
+        "Exclusions",
+        "What exclusions apply to {name}?",
+    ),
+    "premium and payment": (
+        "premium",
+        "Premium",
+        "How are premiums paid for {name}?",
+    ),
+    "riders and combinations": (
+        "riders",
+        "Riders",
+        "Which riders can be added to {name}?",
+    ),
+}
+_HEADING_ORDER = tuple(_QUESTION_BY_HEADING.keys())
 
 
 def _first_sections_by_product() -> dict[str, list[DocumentSection]]:
@@ -63,3 +111,38 @@ def get_product(product_id: str) -> ProductDetail:
         summary=summary,
         benefits=_benefits_from(sections),
     )
+
+
+def list_suggested_questions(product_id: str) -> list[SuggestedQuestion]:
+    """Return sales prompts for headings that exist in the approved product file."""
+
+    sections = _first_sections_by_product().get(product_id)
+    if not sections:
+        raise product_not_found(product_id)
+
+    name = sections[0].product_name
+    available = {section.section.lower() for section in sections}
+    questions: list[SuggestedQuestion] = []
+    for heading in _HEADING_ORDER:
+        if heading not in available:
+            continue
+        question_id, title, template = _QUESTION_BY_HEADING[heading]
+        questions.append(
+            SuggestedQuestion(
+                id=question_id,
+                title=title,
+                question=template.format(name=name),
+            )
+        )
+        if len(questions) >= _MAX_SUGGESTIONS:
+            break
+
+    if questions:
+        return questions
+    return [
+        SuggestedQuestion(
+            id="overview",
+            title="Overview",
+            question=_FALLBACK_QUESTION.format(name=name),
+        )
+    ]

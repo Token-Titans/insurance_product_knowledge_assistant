@@ -8,6 +8,7 @@ Next.js  ── HTTP + CORS ──>  FastAPI (/docs Swagger)
                     GET  /health
                     GET  /products
                     GET  /products/{id}
+                    GET  /products/{id}/suggested-questions
                     POST /assistant/ask
                     (aliases under /api/v1)
                                   │
