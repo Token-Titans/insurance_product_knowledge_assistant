@@ -20,7 +20,7 @@ FastAPI will own retrieval, prompts, AI calls, document processing, product logi
 
 ### 005 — Contract-first integration
 
-All API routes use `/api/v1`. Only `GET /api/v1/health` is implemented in the foundation. Ask and compare are planned only; changes follow `docs/API_CONTRACT.md`.
+All API routes use `/api/v1`. Foundation implemented only `GET /api/v1/health`. `POST /api/v1/assistant/ask` is now implemented. Compare remains planned. Changes follow `docs/API_CONTRACT.md`.
 
 ### 006 — Approved documents are authoritative
 
@@ -30,11 +30,13 @@ Future answers must be grounded in approved product documents, include relevant 
 
 Target Netlify for Next.js and Python-capable hosting for FastAPI. Avoid authentication, complex databases, microservices, Docker, message brokers, and speculative infrastructure unless explicitly requested.
 
+### 008 — OpenAI generation with keyword retrieval
+
+Ask answers are grounded in approved markdown under `services/api/app/knowledge/approved/`. Retrieval is section-level keyword overlap (no vector database). Generation uses OpenAI Chat Completions (`gpt-4o-mini` by default) when `OPENAI_API_KEY` is set server-side. If the key is missing or the provider call fails, the API returns an extractive answer from retrieved sections so the core flow still works.
+
 ## Pending feature decisions
 
-- LLM provider and model.
-- Document extraction approach.
-- Chunking, indexing, and retrieval implementation.
+- Document extraction for non-markdown sources (PDF) if the approved corpus format changes.
 - Hosting provider for FastAPI.
 - Whether the should-have n8n follow-up is attempted.
 

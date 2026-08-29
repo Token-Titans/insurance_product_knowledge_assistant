@@ -16,18 +16,18 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 
 Location: `services/api/.env.example`
 
-Current foundation values:
-
 ```dotenv
 APP_ENV=development
 CORS_ORIGINS=http://localhost:3000
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
 ```
+
+`OPENAI_API_KEY` is server-side only. Leave it empty for extractive answers from approved documents. Set it locally in `.env` (never commit the file) to enable ChatGPT/OpenAI generation.
 
 Potential future server-side values, to be added only with the corresponding approved feature:
 
 ```dotenv
-OPENAI_API_KEY=
-OPENAI_MODEL=
 N8N_WEBHOOK_URL=
 ```
 
@@ -38,6 +38,7 @@ Do not add actual values to documentation or source control. AI and n8n credenti
 - Web: `http://localhost:3000`
 - API: `http://localhost:8000`
 - Health: `http://localhost:8000/api/v1/health`
+- Ask: `POST http://localhost:8000/api/v1/assistant/ask`
 
 ## Validation
 
