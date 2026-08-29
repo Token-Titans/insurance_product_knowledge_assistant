@@ -30,8 +30,8 @@ Response:
 ```json
 [
   {
-    "id": "family-care",
-    "name": "Family Care",
+    "id": "product_a",
+    "name": "Product A",
     "category": "Health"
   }
 ]
@@ -45,8 +45,8 @@ Response:
 
 ```json
 {
-  "id": "family-care",
-  "name": "Family Care",
+  "id": "product_a",
+  "name": "Product A",
   "summary": "...",
   "benefits": ["..."]
 }
@@ -64,34 +64,31 @@ Request:
 
 ```json
 {
-  "question": "I am 30 years old. Which insurance is suitable?"
+  "product_id": "product_a",
+  "question": "What is the hospitalization benefit?"
 }
 ```
 
+- `product_id` is required and must match `knowledge/approved/{product_id}.md`.
 - `question` is required (1–2000 characters).
 
 Response:
 
 ```json
 {
-  "answer": "Recommended product is Family Care...",
-  "sources": [
-    {
-      "title": "Family Care Brochure",
-      "file": "family_care.md",
-      "section": "Eligibility"
-    }
-  ],
-  "recommended_products": [
-    {
-      "id": "family-care",
-      "name": "Family Care"
-    }
-  ]
+  "answer": "",
+  "important_conditions": [],
+  "exclusions": [],
+  "source": {
+    "document": "",
+    "file": "",
+    "section": ""
+  },
+  "confidence": 0.0
 }
 ```
 
-`sources` are copied from retrieved markdown only. They are never invented. When `OPENAI_API_KEY` is unset, the API still answers from retrieved sections.
+`source` is copied from a retrieved markdown section and is never invented. When nothing relevant is found, `source` fields are empty strings and `confidence` is `0.0`. When `OPENAI_API_KEY` is unset, the API still answers from retrieved sections.
 
 Swagger UI: `http://localhost:8000/docs`
 

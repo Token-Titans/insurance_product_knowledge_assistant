@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+from app.core.errors import product_not_found
+
 APPROVED_DIR = Path(__file__).resolve().parents[1] / "knowledge" / "approved"
 
 _STOPWORDS = frozenset(
@@ -26,6 +28,7 @@ _STOPWORDS = frozenset(
         "or",
         "the",
         "to",
+        "what",
         "which",
         "with",
     }
@@ -33,6 +36,7 @@ _STOPWORDS = frozenset(
 _TOP_K = 3
 _MIN_SCORE = 1.0
 _HEADING = re.compile(r"^(#{1,2})\s+(.+?)\s*$")
+_PRODUCT_ID = re.compile(r"^[A-Za-z0-9_]+$")
 
 
 @dataclass(frozen=True)
@@ -43,15 +47,30 @@ class DocumentSection:
     product_name: str
     category: str
     summary: str
-    title: str
+    document: str
     filename: str
     section: str
     content: str
 
 
-def _slug_from_filename(filename: str) -> str:
-    stem = Path(filename).stem
-    return stem.replace("_", "-").replace(" ", "-").lower()
+@dataclass(frozen=True)
+class RankedSection:
+    """A retrieved section with its keyword-overlap score."""
+
+    score: float
+    section: DocumentSection
+
+
+def product_path(product_id: str) -> Path:
+    """Return the approved markdown path for a product id, or raise 404."""
+
+    cleaned = product_id.strip()
+    if not _PRODUCT_ID.fullmatch(cleaned):
+        raise product_not_found(product_id)
+    path = (APPROVED_DIR / f"{cleaned}.md").resolve()
+    if not path.is_file() or path.parent.resolve() != APPROVED_DIR.resolve():
+        raise product_not_found(product_id)
+    return path
 
 
 def _parse_frontmatter(raw: str) -> tuple[dict[str, str], str]:
@@ -118,7 +137,7 @@ def tokenize(text: str) -> set[str]:
 
 def _score(question_tokens: set[str], section: DocumentSection) -> float:
     haystack = tokenize(
-        f"{section.title} {section.section} {section.product_name} {section.content}"
+        f"{section.document} {section.section} {section.product_name} {section.content}"
     )
     overlap = question_tokens & haystack
     if not overlap:
@@ -127,52 +146,59 @@ def _score(question_tokens: set[str], section: DocumentSection) -> float:
     return float(len(overlap)) + heading_boost
 
 
+def _sections_from_file(path: Path) -> list[DocumentSection]:
+    meta, body = _parse_frontmatter(path.read_text(encoding="utf-8"))
+    product_id = meta.get("id") or path.stem
+    first_heading = next(
+        (title for title, _content in _split_sections(body) if title != "Overview"),
+        path.stem.replace("_", " ").title(),
+    )
+    product_name = meta.get("name") or first_heading
+    document = meta.get("document") or meta.get("title") or f"{product_name} Brochure"
+    category = meta.get("category") or "General"
+    summary = meta.get("summary") or ""
+    return [
+        DocumentSection(
+            product_id=product_id,
+            product_name=product_name,
+            category=category,
+            summary=summary,
+            document=document,
+            filename=path.name,
+            section=section_name,
+            content=content,
+        )
+        for section_name, content in _split_sections(body)
+    ]
+
+
 @lru_cache
 def load_documents() -> tuple[DocumentSection, ...]:
     """Load every markdown file in the approved corpus and split by heading."""
 
     if not APPROVED_DIR.is_dir():
         return ()
-
     documents: list[DocumentSection] = []
     for path in sorted(APPROVED_DIR.glob("*.md")):
-        meta, body = _parse_frontmatter(path.read_text(encoding="utf-8"))
-        product_id = meta.get("id") or _slug_from_filename(path.name)
-        first_heading = next(
-            (title for title, _content in _split_sections(body) if title != "Overview"),
-            path.stem.replace("_", " ").title(),
-        )
-        product_name = meta.get("name") or first_heading
-        title = meta.get("title") or f"{product_name} Brochure"
-        category = meta.get("category") or "General"
-        summary = meta.get("summary") or ""
-        for section_name, content in _split_sections(body):
-            documents.append(
-                DocumentSection(
-                    product_id=product_id,
-                    product_name=product_name,
-                    category=category,
-                    summary=summary,
-                    title=title,
-                    filename=path.name,
-                    section=section_name,
-                    content=content,
-                )
-            )
+        documents.extend(_sections_from_file(path))
     return tuple(documents)
 
 
-def search_documents(question: str, *, limit: int = _TOP_K) -> list[DocumentSection]:
-    """Return the top matching approved sections for a question."""
+def search_documents(question: str, product_id: str, *, limit: int = _TOP_K) -> list[RankedSection]:
+    """Return the top matching sections from `knowledge/approved/{product_id}.md`."""
 
+    path = product_path(product_id)
     question_tokens = tokenize(question)
     if not question_tokens:
         return []
 
     ranked = sorted(
-        ((_score(question_tokens, section), section) for section in load_documents()),
-        key=lambda item: item[0],
+        (
+            RankedSection(score=_score(question_tokens, section), section=section)
+            for section in _sections_from_file(path)
+        ),
+        key=lambda item: item.score,
         reverse=True,
     )
-    matched = [section for score, section in ranked if score >= _MIN_SCORE]
+    matched = [item for item in ranked if item.score >= _MIN_SCORE]
     return matched[:limit]
