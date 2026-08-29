@@ -8,7 +8,7 @@ InsureAssist is a foundation-only monorepo for a four-hour hackathon. The planne
 
 ## Current status
 
-- Next.js web scaffold in `apps/web/`
+- Next.js web app in `client/` (App Router, TypeScript, Tailwind v4, shadcn/ui)
 - FastAPI scaffold in `services/api/`
 - Implemented API: `GET /api/v1/health`
 - Planned only: question answering, comparison, retrieval, AI, document processing, and n8n automation
@@ -18,7 +18,7 @@ No product functionality should be inferred from the foundation scaffold.
 ## Repository map
 
 ```text
-apps/web/       Next.js App Router, TypeScript, Tailwind
+client/         Next.js App Router, TypeScript, Tailwind v4, shadcn/ui
 services/api/   FastAPI and future server-side product logic
 docs/           Scope, contracts, architecture, workflow, and runbook
 .cursor/rules/  Repository-specific Cursor guidance
@@ -29,10 +29,18 @@ docs/           Scope, contracts, architecture, workflow, and runbook
 Web:
 
 ```bash
-cd apps/web
+cd client
 npm install
 npm run dev
 ```
+
+The app is at `http://localhost:3000`. Press `d` (when not typing in a field) to toggle light/dark. Theme tokens live in `client/app/globals.css`. Add UI primitives with:
+
+```bash
+npx shadcn@latest add <component>
+```
+
+Keep route files thin and put feature work under `client/` following `.cursor/rules/10-web.mdc`.
 
 API:
 
@@ -49,8 +57,9 @@ Copy each local `.env.example` to `.env` when configuration is needed. Never com
 ## Validate
 
 ```bash
-# apps/web
+# client
 npm run lint
+npm run typecheck
 npm run build
 
 # services/api

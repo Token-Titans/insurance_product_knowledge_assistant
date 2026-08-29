@@ -1,0 +1,13 @@
+{
+  "app": {
+    "name": "InsureAssist",
+    "tagline": "Live Life Beyond Horizon",
+    "history": "မှတ်တမ်း",
+    "compare": "နှိုင်းယှဉ်ရန်",
+    "ask": "မေးရန်"
+  },
+  "locale": {
+    "en": "EN",
+    "my": "MY"
+  }
+}
