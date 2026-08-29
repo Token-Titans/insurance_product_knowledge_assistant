@@ -28,11 +28,15 @@ Future answers must be grounded in approved product documents, include relevant 
 
 ### 007 — Simple hackathon infrastructure
 
-Target Netlify for Next.js and Python-capable hosting for FastAPI. Avoid authentication, complex databases, microservices, Docker, message brokers, and speculative infrastructure unless explicitly requested.
+Target Vercel for Next.js and the documented Ubuntu host for FastAPI. Avoid authentication, complex databases, microservices, Docker, message brokers, and speculative infrastructure unless explicitly requested.
 
 ### 008 — Automated backend production deployment
 
 Backend changes merged to `main` are tested in GitHub Actions and deployed over SSH to the Ubuntu production host. The API runs as a systemd service behind Nginx HTTPS. Deployments use commit-specific releases, an atomic symlink, a health check, and rollback to the previous release if activation fails.
+
+### 009 — Vercel frontend delivery
+
+Use GitHub Actions for frontend lint/build checks and Vercel's native Git integration for preview and production deployments. `main` is the production branch, `apps/web` is the project root, and the public API URL is supplied through Vercel environment configuration.
 
 ## Pending feature decisions
 
