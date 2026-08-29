@@ -68,7 +68,7 @@ export function AskComposer({
           }}
         />
       ) : null}
-      <div className="rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
+      <div className="rounded-2xl bg-card p-3 ring-1 ring-border">
         <Textarea
           rows={3}
           disabled={isPending}

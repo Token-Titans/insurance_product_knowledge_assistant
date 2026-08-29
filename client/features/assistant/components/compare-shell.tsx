@@ -11,7 +11,7 @@ function EmptyCompareColumn({ title }: { title: string }) {
   const { t } = useTranslation("assistant");
 
   return (
-    <section className="space-y-4 rounded-2xl bg-card p-5 ring-1 ring-foreground/10">
+    <section className="space-y-4 rounded-2xl bg-card p-5 ring-1 ring-border">
       <h2 className="font-heading text-lg font-medium">{title}</h2>
       <p className="text-sm text-muted-foreground">{t("compare.empty")}</p>
       <ImportantPoints points={[]} />
