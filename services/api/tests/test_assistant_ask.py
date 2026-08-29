@@ -22,6 +22,7 @@ def test_ask_product_a_hospitalization() -> None:
     assert body["source"]["file"] == "product_a.md"
     assert body["source"]["document"]
     assert body["source"]["section"]
+    assert "page" not in body["source"]
     assert isinstance(body["important_conditions"], list)
     assert isinstance(body["exclusions"], list)
     assert 0.0 <= body["confidence"] <= 1.0

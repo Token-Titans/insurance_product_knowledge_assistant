@@ -39,7 +39,7 @@ _EXCLUSION_HINTS = (
 
 
 def _empty_source() -> SourceReference:
-    return SourceReference(document="", file="", section="")
+    return SourceReference(document="", file="", section="", page=None)
 
 
 def _source_from(section: DocumentSection) -> SourceReference:
@@ -49,6 +49,7 @@ def _source_from(section: DocumentSection) -> SourceReference:
         document=section.document,
         file=section.filename,
         section=section.section,
+        page=section.page,
     )
 
 
@@ -91,9 +92,10 @@ def _context_block(sections: list[DocumentSection]) -> str:
         return "Approved source excerpts: none were retrieved."
     parts = ["Approved source excerpts:"]
     for index, section in enumerate(sections, start=1):
+        page = f" page={section.page}" if section.page is not None else ""
         parts.append(
             f"[{index}] document={section.document!r} file={section.filename!r} "
-            f"section={section.section!r}\n{section.content}"
+            f"section={section.section!r}{page}\n{section.content}"
         )
     return "\n\n".join(parts)
 

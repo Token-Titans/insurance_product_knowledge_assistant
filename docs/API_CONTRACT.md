@@ -69,7 +69,7 @@ Request:
 }
 ```
 
-- `product_id` is required and must match `knowledge/approved/{product_id}.md`.
+- `product_id` is required and must match `knowledge/approved/{product_id}.pdf` or `{product_id}.md`. PDF is preferred when both exist and the PDF is readable.
 - `question` is required (1–2000 characters).
 
 Response:
@@ -82,13 +82,14 @@ Response:
   "source": {
     "document": "",
     "file": "",
-    "section": ""
+    "section": "",
+    "page": null
   },
   "confidence": 0.0
 }
 ```
 
-`source` is copied from a retrieved markdown section and is never invented. When nothing relevant is found, `source` fields are empty strings and `confidence` is `0.0`. When `OPENAI_API_KEY` is unset, the API still answers from retrieved sections.
+`source` is copied from a retrieved markdown section or PDF page and is never invented. `page` is set for PDF chunks and omitted/null for markdown. When nothing relevant is found, `source` fields are empty strings and `confidence` is `0.0`. When `OPENAI_API_KEY` is unset, the API still answers from retrieved sections.
 
 Swagger UI: `http://localhost:8000/docs`
 

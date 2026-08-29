@@ -1,4 +1,4 @@
-"""Keyword retrieval over approved markdown. No vector database."""
+"""Keyword retrieval over approved markdown and PDF. No vector database."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ from functools import lru_cache
 from pathlib import Path
 
 from app.core.errors import product_not_found
+from app.services.markdown_loader import MarkdownSection, load_all_markdown, load_markdown_file
+from app.services.pdf_loader import PdfPage, load_pdf_pages
 
 APPROVED_DIR = Path(__file__).resolve().parents[1] / "knowledge" / "approved"
 
@@ -35,22 +37,44 @@ _STOPWORDS = frozenset(
 )
 _TOP_K = 3
 _MIN_SCORE = 1.0
-_HEADING = re.compile(r"^(#{1,2})\s+(.+?)\s*$")
 _PRODUCT_ID = re.compile(r"^[A-Za-z0-9_]+$")
 
 
 @dataclass(frozen=True)
-class DocumentSection:
-    """One heading-bounded section from an approved markdown file."""
+class RetrievedSection:
+    """One ranked knowledge chunk from markdown or PDF."""
 
-    product_id: str
-    product_name: str
-    category: str
-    summary: str
-    document: str
-    filename: str
+    text: str
+    title: str
+    file: str
     section: str
-    content: str
+    page: int | None = None
+    product_id: str = ""
+    product_name: str = ""
+    category: str = ""
+    summary: str = ""
+
+    @property
+    def content(self) -> str:
+        """Alias used by product catalog helpers."""
+
+        return self.text
+
+    @property
+    def document(self) -> str:
+        """Human-readable document title for citations."""
+
+        return self.title
+
+    @property
+    def filename(self) -> str:
+        """Source filename for citations."""
+
+        return self.file
+
+
+# Backward-compatible name used by product catalog code.
+DocumentSection = RetrievedSection
 
 
 @dataclass(frozen=True)
@@ -58,61 +82,36 @@ class RankedSection:
     """A retrieved section with its keyword-overlap score."""
 
     score: float
-    section: DocumentSection
+    section: RetrievedSection
 
 
-def product_path(product_id: str) -> Path:
-    """Return the approved markdown path for a product id, or raise 404."""
-
+def _safe_stem(product_id: str) -> str:
     cleaned = product_id.strip()
     if not _PRODUCT_ID.fullmatch(cleaned):
         raise product_not_found(product_id)
-    path = (APPROVED_DIR / f"{cleaned}.md").resolve()
-    if not path.is_file() or path.parent.resolve() != APPROVED_DIR.resolve():
-        raise product_not_found(product_id)
-    return path
+    return cleaned
 
 
-def _parse_frontmatter(raw: str) -> tuple[dict[str, str], str]:
-    """Parse optional `---` YAML-like metadata. Unknown keys are ignored."""
-
-    text = raw.lstrip("\ufeff")
-    if not text.startswith("---"):
-        return {}, text
-    end = text.find("\n---", 3)
-    if end == -1:
-        return {}, text
-    block = text[3:end].strip()
-    body = text[end + 4 :].lstrip("\n")
-    meta: dict[str, str] = {}
-    for line in block.splitlines():
-        if ":" not in line:
-            continue
-        key, value = line.split(":", 1)
-        meta[key.strip().lower()] = value.strip().strip("\"'")
-    return meta, body
+def _approved_file(product_id: str, suffix: str) -> Path | None:
+    path = (APPROVED_DIR / f"{_safe_stem(product_id)}{suffix}").resolve()
+    if path.is_file() and path.parent.resolve() == APPROVED_DIR.resolve():
+        return path
+    return None
 
 
-def _split_sections(markdown: str) -> list[tuple[str, str]]:
-    """Split markdown on `#` and `##` headings."""
+def product_path(product_id: str) -> Path:
+    """Return the preferred approved file for a product id, or raise 404.
 
-    sections: list[tuple[str, str]] = []
-    current_title = "Overview"
-    current_lines: list[str] = []
-    for line in markdown.splitlines():
-        match = _HEADING.match(line)
-        if match:
-            body = "\n".join(current_lines).strip()
-            if body:
-                sections.append((current_title, body))
-            current_title = match.group(2).strip()
-            current_lines = []
-            continue
-        current_lines.append(line)
-    body = "\n".join(current_lines).strip()
-    if body:
-        sections.append((current_title, body))
-    return sections
+    Prefers `{id}.pdf` when present, otherwise `{id}.md`.
+    """
+
+    pdf_path = _approved_file(product_id, ".pdf")
+    if pdf_path is not None:
+        return pdf_path
+    md_path = _approved_file(product_id, ".md")
+    if md_path is not None:
+        return md_path
+    raise product_not_found(product_id)
 
 
 def _expand_token(token: str) -> set[str]:
@@ -135,10 +134,8 @@ def tokenize(text: str) -> set[str]:
     return tokens
 
 
-def _score(question_tokens: set[str], section: DocumentSection) -> float:
-    haystack = tokenize(
-        f"{section.document} {section.section} {section.product_name} {section.content}"
-    )
+def _score(question_tokens: set[str], section: RetrievedSection) -> float:
+    haystack = tokenize(f"{section.title} {section.section} {section.product_name} {section.text}")
     overlap = question_tokens & haystack
     if not overlap:
         return 0.0
@@ -146,56 +143,94 @@ def _score(question_tokens: set[str], section: DocumentSection) -> float:
     return float(len(overlap)) + heading_boost
 
 
-def _sections_from_file(path: Path) -> list[DocumentSection]:
-    meta, body = _parse_frontmatter(path.read_text(encoding="utf-8"))
-    product_id = meta.get("id") or path.stem
-    first_heading = next(
-        (title for title, _content in _split_sections(body) if title != "Overview"),
-        path.stem.replace("_", " ").title(),
+def _from_markdown(chunk: MarkdownSection) -> RetrievedSection:
+    return RetrievedSection(
+        text=chunk.content,
+        title=chunk.document,
+        file=chunk.filename,
+        section=chunk.section,
+        page=None,
+        product_id=chunk.product_id,
+        product_name=chunk.product_name,
+        category=chunk.category,
+        summary=chunk.summary,
     )
-    product_name = meta.get("name") or first_heading
-    document = meta.get("document") or meta.get("title") or f"{product_name} Brochure"
-    category = meta.get("category") or "General"
-    summary = meta.get("summary") or ""
-    return [
-        DocumentSection(
-            product_id=product_id,
-            product_name=product_name,
-            category=category,
-            summary=summary,
-            document=document,
-            filename=path.name,
-            section=section_name,
-            content=content,
-        )
-        for section_name, content in _split_sections(body)
-    ]
+
+
+def _from_pdf_page(page: PdfPage, product_id: str) -> RetrievedSection:
+    name = product_id.replace("_", " ").title()
+    return RetrievedSection(
+        text=page.text,
+        title=page.document,
+        file=page.file,
+        section=f"Page {page.page}",
+        page=page.page,
+        product_id=product_id,
+        product_name=name,
+        category="General",
+        summary=page.text[:280],
+    )
+
+
+def _sections_for_product(product_id: str) -> list[RetrievedSection]:
+    """Prefer a readable PDF; otherwise use markdown. Empty if PDF parse fails and no MD."""
+
+    pdf_path = _approved_file(product_id, ".pdf")
+    md_path = _approved_file(product_id, ".md")
+    if pdf_path is not None:
+        pages = load_pdf_pages(pdf_path)
+        if pages:
+            return [_from_pdf_page(page, _safe_stem(product_id)) for page in pages]
+        if md_path is not None:
+            return [_from_markdown(chunk) for chunk in load_markdown_file(md_path)]
+        return []
+    if md_path is not None:
+        return [_from_markdown(chunk) for chunk in load_markdown_file(md_path)]
+    raise product_not_found(product_id)
 
 
 @lru_cache
-def load_documents() -> tuple[DocumentSection, ...]:
-    """Load every markdown file in the approved corpus and split by heading."""
+def load_documents() -> tuple[RetrievedSection, ...]:
+    """Load approved markdown, plus PDF-only products that have no markdown file."""
 
     if not APPROVED_DIR.is_dir():
         return ()
-    documents: list[DocumentSection] = []
-    for path in sorted(APPROVED_DIR.glob("*.md")):
-        documents.extend(_sections_from_file(path))
+    documents: list[RetrievedSection] = [
+        _from_markdown(chunk) for chunk in load_all_markdown(APPROVED_DIR)
+    ]
+    seen = {item.product_id for item in documents}
+    for path in sorted(APPROVED_DIR.glob("*.pdf")):
+        product_id = path.stem
+        if product_id in seen:
+            continue
+        pages = load_pdf_pages(path)
+        if not pages:
+            continue
+        documents.extend(_from_pdf_page(page, product_id) for page in pages)
+        seen.add(product_id)
     return tuple(documents)
 
 
-def search_documents(question: str, product_id: str, *, limit: int = _TOP_K) -> list[RankedSection]:
-    """Return the top matching sections from `knowledge/approved/{product_id}.md`."""
+def search_documents(
+    question: str,
+    product_id: str,
+    *,
+    limit: int = _TOP_K,
+) -> list[RankedSection]:
+    """Return the top matching sections for a product question.
 
-    path = product_path(product_id)
+    Uses `{product_id}.pdf` when it parses successfully; otherwise `{product_id}.md`.
+    """
+
+    chunks = _sections_for_product(product_id)
     question_tokens = tokenize(question)
-    if not question_tokens:
+    if not question_tokens or not chunks:
         return []
 
     ranked = sorted(
         (
             RankedSection(score=_score(question_tokens, section), section=section)
-            for section in _sections_from_file(path)
+            for section in chunks
         ),
         key=lambda item: item.score,
         reverse=True,

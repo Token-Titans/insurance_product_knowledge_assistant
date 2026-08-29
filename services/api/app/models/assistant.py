@@ -64,8 +64,9 @@ class SourceReference(BaseModel):
             "examples": [
                 {
                     "document": "Product A Brochure",
-                    "file": "product_a.md",
-                    "section": "Hospitalization Benefits",
+                    "file": "product_a.pdf",
+                    "section": "Page 2",
+                    "page": 2,
                 }
             ]
         }
@@ -74,6 +75,7 @@ class SourceReference(BaseModel):
     document: str = ""
     file: str = ""
     section: str = ""
+    page: int | None = None
 
 
 class AskRequest(BaseModel):
@@ -122,6 +124,7 @@ class AssistantResponse(BaseModel):
                         "document": "Product A Brochure",
                         "file": "product_a.md",
                         "section": "Hospitalization Benefits",
+                        "page": None,
                     },
                     "confidence": 0.82,
                 }
