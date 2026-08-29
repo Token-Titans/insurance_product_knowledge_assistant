@@ -3,8 +3,15 @@
 from fastapi import APIRouter, Depends
 
 from app.core.config import Settings, get_settings
-from app.models.assistant import AskRequest, AssistantResponse, FollowUpRequest, FollowUpResponse
-from app.services.assistant import ask_product_question
+from app.models.assistant import (
+    AskRequest,
+    AssistantResponse,
+    CompareRequest,
+    CompareResponse,
+    FollowUpRequest,
+    FollowUpResponse,
+)
+from app.services.assistant import ask_product_question, compare_products
 from app.services.follow_up import send_follow_up
 
 router = APIRouter(prefix="/assistant", tags=["Assistant"])
@@ -29,6 +36,46 @@ async def ask(
     """Answer a sales-agent product question from approved documents."""
 
     return await ask_product_question(payload.product_id, payload.question, settings)
+
+
+@router.post(
+    "/compare",
+    response_model=CompareResponse,
+    response_model_exclude_none=True,
+    summary="Compare two approved products",
+    description=(
+        "Runs the same grounded ask against `left_product_id` and `right_product_id`. "
+        "Each column is retrieved and cited independently. The products must be different. "
+        "Unknown ids return HTTP 404 with `PRODUCT_NOT_FOUND`."
+    ),
+    responses={
+        404: {
+            "description": "Unknown product id",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": {
+                            "code": "PRODUCT_NOT_FOUND",
+                            "message": "Unknown product 'missing-id'.",
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def compare(
+    payload: CompareRequest,
+    settings: Settings = Depends(get_settings),
+) -> CompareResponse:
+    """Compare one question across two approved products."""
+
+    return await compare_products(
+        payload.left_product_id,
+        payload.right_product_id,
+        payload.question,
+        settings,
+    )
 
 
 @router.post(

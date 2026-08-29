@@ -1,9 +1,9 @@
 """Pydantic API models. Response shapes are frozen for the frontend."""
 
 from datetime import date
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class HealthResponse(BaseModel):
@@ -122,6 +122,41 @@ class AskRequest(BaseModel):
     )
 
 
+class CompareRequest(BaseModel):
+    """Compare the same question across two approved products."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "question": "What are the key benefits, conditions, and exclusions?",
+                    "left_product_id": "dai_ichi_life_pro",
+                    "right_product_id": "dai_ichi_guard",
+                }
+            ]
+        }
+    )
+
+    question: str = Field(
+        ...,
+        min_length=1,
+        max_length=2000,
+        examples=["What are the key benefits, conditions, and exclusions?"],
+    )
+    left_product_id: str = Field(
+        ..., min_length=1, max_length=64, examples=["dai_ichi_life_pro"]
+    )
+    right_product_id: str = Field(
+        ..., min_length=1, max_length=64, examples=["dai_ichi_guard"]
+    )
+
+    @model_validator(mode="after")
+    def distinct_products(self) -> Self:
+        if self.left_product_id.strip() == self.right_product_id.strip():
+            raise ValueError("left_product_id and right_product_id must be different")
+        return self
+
+
 class AssistantResponse(BaseModel):
     """Grounded product answer with conditions, exclusions, and one source."""
 
@@ -158,6 +193,46 @@ class AssistantResponse(BaseModel):
     exclusions: list[str]
     source: SourceReference
     confidence: float = Field(..., ge=0.0, le=1.0)
+
+
+class CompareResponse(BaseModel):
+    """Side-by-side grounded answers. Each column uses only that product's sources."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "left": {
+                        "answer": "Dai-ichi Life Pro pays 100% of the sum insured on death or TPD.",
+                        "important_conditions": [],
+                        "exclusions": [],
+                        "source": {
+                            "document": "Dai-ichi Life Pro Product Guide",
+                            "file": "dai_ichi_life_pro.md",
+                            "section": "Benefits",
+                            "page": None,
+                        },
+                        "confidence": 0.7,
+                    },
+                    "right": {
+                        "answer": "Dai-ichi Guard adds a further 100% of the sum insured as a rider.",
+                        "important_conditions": [],
+                        "exclusions": [],
+                        "source": {
+                            "document": "Dai-ichi Guard Rider Guide",
+                            "file": "dai_ichi_guard.md",
+                            "section": "Benefits",
+                            "page": None,
+                        },
+                        "confidence": 0.7,
+                    },
+                }
+            ]
+        }
+    )
+
+    left: AssistantResponse
+    right: AssistantResponse
 
 
 class FollowUpRequest(BaseModel):

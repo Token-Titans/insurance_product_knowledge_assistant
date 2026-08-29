@@ -3,6 +3,8 @@
 from app.models.assistant import (
     AskRequest,
     AssistantResponse,
+    CompareRequest,
+    CompareResponse,
     HealthResponse,
     ProductDetail,
     ProductSummary,
@@ -13,6 +15,8 @@ from app.models.assistant import (
 __all__ = [
     "AskRequest",
     "AssistantResponse",
+    "CompareRequest",
+    "CompareResponse",
     "HealthResponse",
     "ProductDetail",
     "ProductSummary",

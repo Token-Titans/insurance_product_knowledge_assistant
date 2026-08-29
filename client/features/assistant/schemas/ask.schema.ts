@@ -28,6 +28,11 @@ export const askResponseSchema = z.object({
   confidence: z.number().min(0).max(1),
 });
 
+export const compareResponseSchema = z.object({
+  left: askResponseSchema,
+  right: askResponseSchema,
+});
+
 export function isGroundedResponse(confidence: number) {
   return confidence > 0;
 }
