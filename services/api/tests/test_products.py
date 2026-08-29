@@ -16,11 +16,11 @@ def test_list_products() -> None:
     assert ids == {
         "product_a",
         "product_b",
-        "dai-ichi-life-pro",
-        "dai-ichi-guard",
-        "dai-ichi-ci-plus",
-        "dai-ichi-active-care",
-        "htar-wa-ra-edu-goal",
+        "dai_ichi_life_pro",
+        "dai_ichi_guard",
+        "dai_ichi_ci_plus",
+        "dai_ichi_active_care",
+        "htar_wa_ra_edu_goal",
     }
     product_a = next(item for item in body if item["id"] == "product_a")
     assert product_a["name"] == "Product A"

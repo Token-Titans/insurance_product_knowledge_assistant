@@ -1,5 +1,5 @@
 ---
-id: dai-ichi-active-care
+id: dai_ichi_active_care
 name: Dai-ichi Active Care
 category: Personal Accident
 title: Dai-ichi Active Care Product Guide
