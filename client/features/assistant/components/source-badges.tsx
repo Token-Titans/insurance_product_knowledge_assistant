@@ -27,29 +27,20 @@ export function SourceBadges({ source }: SourceBadgesProps) {
   }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
       <span className="sr-only">{t("answered.sources")}</span>
       {source.document.trim() ? (
-        <Badge
-          variant="outline"
-          className="h-auto max-w-full whitespace-normal py-1"
-        >
+        <Badge variant="outline" className="max-w-full truncate">
           {source.document}
         </Badge>
       ) : null}
       {source.section.trim() ? (
-        <Badge
-          variant="secondary"
-          className="h-auto max-w-full whitespace-normal py-1"
-        >
+        <Badge variant="secondary" className="max-w-full truncate">
           {source.section}
         </Badge>
       ) : null}
       {source.page != null ? (
-        <Badge
-          variant="secondary"
-          className="h-auto max-w-full whitespace-normal py-1"
-        >
+        <Badge variant="secondary" className="max-w-full truncate">
           {t("answered.page", { page: source.page })}
         </Badge>
       ) : null}

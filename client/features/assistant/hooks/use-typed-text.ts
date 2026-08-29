@@ -1,42 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+
+function subscribeReducedMotion(onStoreChange: () => void) {
+  const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+  media.addEventListener("change", onStoreChange);
+
+  return () => media.removeEventListener("change", onStoreChange);
+}
+
+function getReducedMotionSnapshot() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function getReducedMotionServerSnapshot() {
+  return false;
+}
 
 function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
-    typeof window !== "undefined"
-      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      : false,
+  return useSyncExternalStore(
+    subscribeReducedMotion,
+    getReducedMotionSnapshot,
+    getReducedMotionServerSnapshot,
   );
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setPrefersReducedMotion(media.matches);
-
-    function onChange() {
-      setPrefersReducedMotion(media.matches);
-    }
-
-    media.addEventListener("change", onChange);
-
-    return () => media.removeEventListener("change", onChange);
-  }, []);
-
-  return prefersReducedMotion;
 }
 
 export function useTypedText(content: string, enabled: boolean) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const shouldType = enabled && !prefersReducedMotion && content.length > 0;
-  const [count, setCount] = useState(shouldType ? 0 : content.length);
+  const [count, setCount] = useState(0);
+  const [typedContent, setTypedContent] = useState(content);
+
+  if (content !== typedContent) {
+    setTypedContent(content);
+    setCount(0);
+  }
 
   useEffect(() => {
     if (!shouldType) {
-      setCount(content.length);
       return;
     }
 
-    setCount(0);
     let index = 0;
     const step = Math.max(2, Math.ceil(content.length / 72));
     const timer = window.setInterval(() => {
@@ -52,7 +56,7 @@ export function useTypedText(content: string, enabled: boolean) {
   }, [content, shouldType]);
 
   return {
-    shown: content.slice(0, count),
+    shown: shouldType ? content.slice(0, count) : content,
     isTyping: shouldType && count < content.length,
   };
 }
