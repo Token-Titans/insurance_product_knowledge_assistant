@@ -34,11 +34,11 @@ export function ConversationHistory({
         <Button
           type="button"
           size="sm"
-          variant="secondary"
-          className="bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20"
+          variant="ghost"
+          className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
         >
           <History />
-          {tCommon("app.history")}
+          <span className="hidden sm:inline">{tCommon("app.history")}</span>
         </Button>
       </SheetTrigger>
       <SheetContent side="left">

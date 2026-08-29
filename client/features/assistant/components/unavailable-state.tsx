@@ -15,8 +15,8 @@ export function UnavailableState({
   const { t } = useTranslation("assistant");
 
   return (
-    <section className="flex flex-col items-center rounded-2xl bg-card px-6 py-16 text-center ring-1 ring-foreground/10">
-      <ShieldOff className="size-8 text-indigo" />
+    <section className="flex flex-col items-center rounded-2xl bg-card px-6 py-16 text-center ring-1 ring-border">
+      <ShieldOff className="size-8 text-primary" />
       <p className="mt-4 max-w-md font-myanmar text-sm text-muted-foreground">
         {question}
       </p>

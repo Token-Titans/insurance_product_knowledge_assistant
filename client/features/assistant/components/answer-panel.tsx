@@ -20,7 +20,7 @@ export function AnswerPanel({ question, response }: AnswerPanelProps) {
   return (
     <section className="space-y-5">
       <p className="font-myanmar text-sm text-muted-foreground">{question}</p>
-      <article className="rounded-2xl bg-card p-6 ring-1 ring-foreground/10">
+      <article className="rounded-2xl bg-card p-6 ring-1 ring-border">
         <p className="text-base leading-relaxed">{response.answer}</p>
       </article>
       <div className="grid gap-4 md:grid-cols-2">

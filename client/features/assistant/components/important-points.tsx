@@ -11,8 +11,8 @@ export function ImportantPoints({ points }: ImportantPointsProps) {
   const { t } = useTranslation("assistant");
 
   return (
-    <section className="rounded-2xl bg-mist p-5 ring-1 ring-brand/15">
-      <h3 className="font-heading text-sm font-medium text-indigo">
+    <section className="rounded-2xl bg-muted p-5 ring-1 ring-border">
+      <h3 className="font-heading text-sm font-medium text-accent-foreground">
         {t("answered.important_points")}
       </h3>
       <ul className="mt-3 space-y-2">
