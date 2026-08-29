@@ -1,0 +1,1 @@
+# For cursor myanmar ai hackathon
