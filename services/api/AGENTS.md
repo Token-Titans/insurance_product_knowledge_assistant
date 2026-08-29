@@ -3,7 +3,7 @@
 ## Scope
 
 - Keep all API work inside `services/api`.
-- Canonical routes: `/health`, `/products`, `/products/{id}`, `/assistant/ask`.
+- Canonical routes: `/health`, `/products`, `/products/{id}`, `/products/{id}/suggested-questions`, `/assistant/ask`.
 - The same handlers are mounted under `/api/v1` for compatibility.
 - Keep configuration in `app/core/config.py` and load values from environment variables.
 - Define Pydantic response models for API responses.
@@ -18,6 +18,7 @@
 
 - `GET /health`
 - `GET /products` and `GET /products/{id}`
+- `GET /products/{id}/suggested-questions` — sales prompts from approved document headings
 - `POST /assistant/ask` — grounded answers from `app/knowledge/approved/{product_id}.pdf`
   when present, otherwise `{product_id}.md`. OpenAI is used when `OPENAI_API_KEY` is set;
   otherwise extractive retrieval. Unreadable PDFs fall back to markdown.

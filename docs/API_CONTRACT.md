@@ -54,6 +54,28 @@ Response:
 
 Unknown ids return HTTP 404 with `PRODUCT_NOT_FOUND`.
 
+`GET /products/{id}/suggested-questions`
+
+**Status: IMPLEMENTED**
+
+Response:
+
+```json
+[
+  {
+    "id": "hospitalization",
+    "title": "Hospitalization",
+    "question": "What hospitalization benefits does Product A provide?"
+  }
+]
+```
+
+- `id` is a stable slug for the prompt card (`hospitalization`, `benefits`, `eligibility`, `coverage`, `conditions`, `exclusions`, `premium`, `riders`, or `overview`).
+- `title` is a short English label for the card.
+- `question` is the full prompt the agent can submit to `POST /assistant/ask`.
+- Questions are generated only from headings that exist in that product's approved markdown. At most five questions are returned.
+- Unknown ids return HTTP 404 with `PRODUCT_NOT_FOUND`.
+
 ## Ask Product Question
 
 `POST /assistant/ask`

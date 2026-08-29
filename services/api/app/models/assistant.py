@@ -56,6 +56,26 @@ class ProductDetail(BaseModel):
     benefits: list[str]
 
 
+class SuggestedQuestion(BaseModel):
+    """One grounded sales prompt derived from an approved document heading."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "hospitalization",
+                    "title": "Hospitalization",
+                    "question": "What hospitalization benefits does Product A provide?",
+                }
+            ]
+        }
+    )
+
+    id: str
+    title: str
+    question: str
+
+
 class SourceReference(BaseModel):
     """Single citation copied from a retrieved markdown section. Never fabricated."""
 
