@@ -27,11 +27,11 @@
     "product_b": "Product B"
   },
   "suggested": {
-    "hospital_title": "Hospitalization",
-    "hospital": "What hospitalization benefits does Product A provide?",
+    "eligibility_title": "Eligibility",
+    "eligibility": "What is the entry age and minimum sum insured?",
     "exclusion_title": "Exclusions",
-    "exclusion": "What exclusions apply to Product A hospital benefits?",
-    "unavailable_title": "Wallet sublimit",
+    "exclusion": "What exclusions apply to this plan?",
+    "unavailable_title": "Not in the documents",
     "unavailable": "What is the cryptocurrency wallet protection sublimit?"
   },
   "loading": {

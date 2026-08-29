@@ -29,15 +29,12 @@ APP_ENV=development
 CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4o-mini
+N8N_WEBHOOK_URL=
 ```
 
 `OPENAI_API_KEY` is server-side only. Leave it empty for extractive answers from approved documents. Set it locally in `.env` (never commit the file) to enable ChatGPT/OpenAI generation.
 
-Potential future server-side values, to be added only with the corresponding approved feature:
-
-```dotenv
-N8N_WEBHOOK_URL=
-```
+`N8N_WEBHOOK_URL` is server-side only. Leave it empty to disable follow-up. Use the n8n test URL while the editor is listening, and the production URL after the workflow is Active.
 
 Do not add actual values to documentation or source control. AI and n8n credentials belong only in the backend deployment environment.
 
@@ -48,6 +45,7 @@ Do not add actual values to documentation or source control. AI and n8n credenti
 - Health: `http://localhost:8000/health`
 - Products: `http://localhost:8000/products`
 - Ask: `POST http://localhost:8000/assistant/ask`
+- Follow-up: `POST http://localhost:8000/assistant/follow-up`
 - Swagger: `http://localhost:8000/docs`
 - Compatibility prefix: `/api/v1` (same handlers)
 

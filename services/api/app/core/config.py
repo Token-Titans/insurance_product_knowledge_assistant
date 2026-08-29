@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     )
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+    n8n_webhook_url: str = ""
 
     @field_validator("cors_origins", mode="before")
     @classmethod
