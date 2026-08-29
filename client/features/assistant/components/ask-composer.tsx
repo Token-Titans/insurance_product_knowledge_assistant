@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowUp, Columns2, LoaderCircle } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
@@ -64,9 +64,21 @@ export function AskComposer({
     },
   });
 
-  const productId = form.watch("product_id");
-  const compareProductId = form.watch("compare_product_id");
-  const questionValue = form.watch("question");
+  const productId = useWatch({
+    control: form.control,
+    name: "product_id",
+    defaultValue: "",
+  });
+  const compareProductId = useWatch({
+    control: form.control,
+    name: "compare_product_id",
+    defaultValue: "",
+  });
+  const questionValue = useWatch({
+    control: form.control,
+    name: "question",
+    defaultValue: "",
+  });
   const questionField = form.register("question");
   const canCompare = products.length >= 2;
   const hasDistinctProducts =
