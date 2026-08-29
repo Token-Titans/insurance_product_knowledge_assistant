@@ -37,7 +37,28 @@ _STOPWORDS = frozenset(
 )
 _TOP_K = 3
 _MIN_SCORE = 1.0
-_PRODUCT_ID = re.compile(r"^[A-Za-z0-9_]+$")
+_PRODUCT_ID = re.compile(r"^[A-Za-z0-9_-]+$")
+_LATIN_TOKEN = re.compile(r"[a-z0-9]+")
+_MYANMAR_TOKEN = re.compile(r"[\u1000-\u109F]+")
+_MYANMAR_ALIASES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("အကျိုးခံစားခွင့်", ("benefit", "benefits")),
+    ("အာမခံပမာဏ", ("sum", "insured")),
+    ("ချန်လှပ်ချက်", ("exclusion", "exclusions")),
+    ("ချွင်းချက်", ("exclusion", "exclusions")),
+    ("ဆေးရုံ", ("hospital", "hospitalisation", "hospitalization")),
+    ("မသန်စွမ်း", ("disability", "permanent")),
+    ("မတော်တဆ", ("accident", "accidental")),
+    ("စောင့်ဆိုင်း", ("waiting", "period")),
+    ("ပညာရေး", ("education",)),
+    ("ရှင်သန်", ("living", "benefit")),
+    ("ပရီမီယံ", ("premium",)),
+    ("သေဆုံး", ("death",)),
+    ("ကင်ဆာ", ("critical", "illness")),
+    ("ထားရှိ", ("eligibility", "entry")),
+    ("အနည်းဆုံး", ("minimum",)),
+    ("အသက်", ("age", "entry", "eligibility")),
+    ("အာမခံ", ("cover", "coverage", "insurance")),
+)
 
 
 @dataclass(frozen=True)
@@ -85,6 +106,15 @@ class RankedSection:
     section: RetrievedSection
 
 
+def _candidate_stems(product_id: str) -> tuple[str, ...]:
+    cleaned = product_id.strip()
+    stems = [cleaned]
+    underscored = cleaned.replace("-", "_")
+    if underscored != cleaned:
+        stems.append(underscored)
+    return tuple(stems)
+
+
 def _safe_stem(product_id: str) -> str:
     cleaned = product_id.strip()
     if not _PRODUCT_ID.fullmatch(cleaned):
@@ -93,9 +123,10 @@ def _safe_stem(product_id: str) -> str:
 
 
 def _approved_file(product_id: str, suffix: str) -> Path | None:
-    path = (APPROVED_DIR / f"{_safe_stem(product_id)}{suffix}").resolve()
-    if path.is_file() and path.parent.resolve() == APPROVED_DIR.resolve():
-        return path
+    for stem in _candidate_stems(_safe_stem(product_id)):
+        path = (APPROVED_DIR / f"{stem}{suffix}").resolve()
+        if path.is_file() and path.parent.resolve() == APPROVED_DIR.resolve():
+            return path
     return None
 
 
@@ -127,10 +158,17 @@ def tokenize(text: str) -> set[str]:
     """Return content tokens used for overlap scoring."""
 
     tokens: set[str] = set()
-    for raw in re.findall(r"[a-z0-9]+", text.lower()):
+    lowered = text.lower()
+    for raw in _LATIN_TOKEN.findall(lowered):
         if raw in _STOPWORDS or len(raw) < 2:
             continue
         tokens.update(_expand_token(raw))
+    for raw in _MYANMAR_TOKEN.findall(text):
+        if len(raw) >= 2:
+            tokens.add(raw)
+    for needle, aliases in _MYANMAR_ALIASES:
+        if needle in text:
+            tokens.update(aliases)
     return tokens
 
 
@@ -224,7 +262,9 @@ def search_documents(
 
     chunks = _sections_for_product(product_id)
     question_tokens = tokenize(question)
-    if not question_tokens or not chunks:
+    if not chunks:
+        return []
+    if not question_tokens:
         return []
 
     ranked = sorted(
@@ -236,4 +276,8 @@ def search_documents(
         reverse=True,
     )
     matched = [item for item in ranked if item.score >= _MIN_SCORE]
-    return matched[:limit]
+    if matched:
+        return matched[:limit]
+    if _MYANMAR_TOKEN.search(question):
+        return [RankedSection(score=1.0, section=chunk) for chunk in chunks[:limit]]
+    return []

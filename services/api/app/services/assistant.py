@@ -8,16 +8,55 @@ from app.models.assistant import AssistantResponse, SourceReference
 from app.services.ai.openai_client import chat_json
 from app.services.retrieve import DocumentSection, RankedSection, search_documents
 
+_MYANMAR = re.compile(r"[\u1000-\u109F]")
+_GREETING = re.compile(
+    r"^(hi|hello|hey|yo|thanks|thank you|thx|good morning|good afternoon|"
+    r"good evening|how are you|what'?s up)[\s!.,?]*$",
+    re.IGNORECASE,
+)
+_THANKS = re.compile(r"thank|thanks|thx|ကျေးဇူး", re.IGNORECASE)
+
 SYSTEM_PROMPT = (
-    "You are an insurance product knowledge assistant. "
-    "Only answer using provided context. "
-    "If information is unavailable, say you don't know. "
-    "Never invent insurance benefits."
+    "You are InsureAssist, a product-knowledge assistant for insurance sales agents. "
+    "Write like a sharp coach: lead with the direct answer, then the numbers, "
+    "then any condition or exclusion the agent must mention. "
+    "Use short paragraphs or tight bullets. Sound natural, not like a copied brochure. "
+    "Answer only from the approved excerpts. Never invent benefits, limits, ages, "
+    "sums insured, waiting periods, or exclusions. "
+    "Match the agent's language. If the question uses Myanmar script, write answer, "
+    "important_conditions, and exclusions in natural Burmese. If the question is English, "
+    "write English. Keep product names, MMK, and percentages as in the excerpts. "
+    "If the question is a greeting or thanks, greet them, invite a product question, "
+    "and do not invent product facts. "
+    "If the excerpts do not support the question, say you don't know in the same language. "
+    "This is not a quote, underwriting decision, or policy contract."
 )
 
-_UNAVAILABLE_ANSWER = (
+_UNAVAILABLE_EN = (
     "I don't know. The approved product documents do not contain enough "
     "information to answer this question."
+)
+_UNAVAILABLE_MY = (
+    "ကျွန်ုပ် မသိပါ။ အတည်ပြုထားသော ထုတ်ကုန် စာရွက်စာတမ်းတွင် "
+    "ဤမေးခွန်းအတွက် လုံလောက်သော အချက်အလက် မပါဝင်ပါ။"
+)
+_GREETING_EN = (
+    "Hello — I'm InsureAssist, your product-knowledge assistant. "
+    "Ask about eligibility, benefits, exclusions, or how this plan fits a customer. "
+    "I only answer from approved product documents."
+)
+_GREETING_MY = (
+    "မင်္ဂလာပါ။ InsureAssist ဖြစ်ပါတယ်။ "
+    "အာမခံထားရှိနိုင်မှု၊ အကျိုးခံစားခွင့်၊ ချွင်းချက်များကို မေးနိုင်ပါတယ်။ "
+    "အတည်ပြုထားသော ထုတ်ကုန် စာရွက်စာတမ်းများမှသာ ဖြေပါမယ်။"
+)
+_THANKS_EN = (
+    "You're welcome. If you need a benefit, exclusion, or eligibility check "
+    "from the approved documents, ask anytime."
+)
+_THANKS_MY = (
+    "ကိစ္စမရှိပါဘူး။ အကျိုးခံစားခွင့်၊ ချွင်းချက် သို့မဟုတ် "
+    "အာမခံထားရှိနိုင်မှုကို ဆက်မေးနိုင်ပါတယ်။"
 )
 
 _CONDITION_HINTS = (
@@ -36,6 +75,34 @@ _EXCLUSION_HINTS = (
     "exclusion",
     "not pay for",
 )
+
+
+def _uses_myanmar(text: str) -> bool:
+    return bool(_MYANMAR.search(text))
+
+
+def _unavailable_answer(question: str) -> str:
+    return _UNAVAILABLE_MY if _uses_myanmar(question) else _UNAVAILABLE_EN
+
+
+def _is_small_talk(question: str) -> bool:
+    stripped = question.strip()
+    if len(stripped) > 80:
+        return False
+    if _GREETING.fullmatch(stripped):
+        return True
+    compact = stripped.replace(" ", "")
+    greetings_my = ("မင်္ဂလာပါ", "ဟယ်လို", "ဟိုင်း")
+    if any(item in stripped for item in greetings_my) and len(compact) < 24:
+        return True
+    return bool(_THANKS.search(stripped) and len(stripped) < 40)
+
+
+def _small_talk_answer(question: str) -> str:
+    myanmar = _uses_myanmar(question)
+    if _THANKS.search(question) and not _GREETING.fullmatch(question.strip()):
+        return _THANKS_MY if myanmar else _THANKS_EN
+    return _GREETING_MY if myanmar else _GREETING_EN
 
 
 def _empty_source() -> SourceReference:
@@ -103,12 +170,20 @@ def _context_block(sections: list[DocumentSection]) -> str:
 def build_prompt(question: str, sections: list[DocumentSection]) -> list[dict[str, str]]:
     """Build OpenAI chat messages from the top retrieved sections."""
 
+    language = (
+        "Write the JSON string values in natural Burmese (Myanmar script)."
+        if _uses_myanmar(question)
+        else "Write the JSON string values in clear English."
+    )
     user_prompt = (
         f"Question: {question}\n\n{_context_block(sections)}\n\n"
+        f"{language} "
         "Return JSON with keys: answer (string), important_conditions (array of strings), "
         "exclusions (array of strings). "
-        "Copy conditions and exclusions only from the excerpts. "
-        "If the excerpts do not support an answer, say you don't know and use empty arrays. "
+        "answer should be 2–5 short sentences or bullets a sales agent can say aloud. "
+        "Copy conditions and exclusions only from the excerpts; keep them brief. "
+        "If the excerpts do not support an answer, say you don't know in the same "
+        "language as the question and use empty arrays. "
         "Do not invent benefits, limits, waiting periods, or exclusions."
     )
     return [
@@ -117,12 +192,18 @@ def build_prompt(question: str, sections: list[DocumentSection]) -> list[dict[st
     ]
 
 
-def _extractive_answer(sections: list[DocumentSection]) -> str:
+def _extractive_answer(question: str, sections: list[DocumentSection]) -> str:
     if not sections:
-        return _UNAVAILABLE_ANSWER
+        return _unavailable_answer(question)
     text = " ".join(sections[0].content.split())
     if len(text) > 900:
         text = text[:897].rsplit(" ", 1)[0] + "..."
+    if _uses_myanmar(question):
+        return (
+            "အတည်ပြု စာရွက်စာတမ်းမှ အချက်အလက်ဖြစ်ပါတယ်။ "
+            "အေးဂျင့်အနေဖြင့် ဖောက်သည်ကို ပြောပြနိုင်သည်များ:\n\n"
+            + text
+        )
     return text
 
 
@@ -146,6 +227,15 @@ async def ask_product_question(
     if not cleaned_question:
         raise invalid_request("question must not be empty")
 
+    if _is_small_talk(cleaned_question):
+        return AssistantResponse(
+            answer=_small_talk_answer(cleaned_question),
+            important_conditions=[],
+            exclusions=[],
+            source=_empty_source(),
+            confidence=1.0,
+        )
+
     ranked = search_documents(cleaned_question, cleaned_product)
     sections = [item.section for item in ranked]
     generated = await chat_json(build_prompt(cleaned_question, sections), settings)
@@ -156,14 +246,16 @@ async def ask_product_question(
 
     if generated is None:
         return AssistantResponse(
-            answer=_extractive_answer(sections),
+            answer=_extractive_answer(cleaned_question, sections),
             important_conditions=fallback_conditions,
             exclusions=fallback_exclusions,
             source=source,
             confidence=_confidence(ranked),
         )
 
-    answer = str(generated.get("answer", "")).strip() or _extractive_answer(sections)
+    answer = str(generated.get("answer", "")).strip() or _extractive_answer(
+        cleaned_question, sections
+    )
     return AssistantResponse(
         answer=answer,
         important_conditions=_string_list(generated.get("important_conditions"))
