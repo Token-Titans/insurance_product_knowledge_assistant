@@ -19,7 +19,9 @@ function EmptyCompareColumn({ title }: { title: string }) {
       <SourceCard
         source={{
           document: t("compare.empty"),
+          file: "",
           section: t("compare.empty"),
+          page: null,
         }}
       />
     </section>

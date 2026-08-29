@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { isGroundedResponse } from "@/features/assistant/schemas/ask.schema";
 import { useAskProductQuestion } from "@/shared/queries/ask.query";
 import { isApiError, isCanceledError } from "@/shared/types/api-error";
 
@@ -13,7 +14,7 @@ function createTurnId() {
 }
 
 function statusFromResponse(response: AskResponse): ChatTurn["status"] {
-  return response.confidence === "grounded" ? "answered" : "unavailable";
+  return isGroundedResponse(response.confidence) ? "answered" : "unavailable";
 }
 
 export function useAskScreen() {
