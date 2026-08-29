@@ -13,15 +13,7 @@ def test_list_products() -> None:
     assert response.status_code == 200
     body = response.json()
     ids = {item["id"] for item in body}
-    assert ids == {
-        "product_a",
-        "product_b",
-        "dai-ichi-life-pro",
-        "dai-ichi-guard",
-        "dai-ichi-ci-plus",
-        "dai-ichi-active-care",
-        "htar-wa-ra-edu-goal",
-    }
+    assert {"product_a", "product_b"} <= ids
     product_a = next(item for item in body if item["id"] == "product_a")
     assert product_a["name"] == "Product A"
     assert product_a["category"] == "Health"

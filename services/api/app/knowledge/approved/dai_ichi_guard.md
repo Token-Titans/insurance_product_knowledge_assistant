@@ -1,5 +1,5 @@
 ---
-id: dai-ichi-guard
+id: dai_ichi_guard
 name: Dai-ichi Guard
 category: Rider
 title: Dai-ichi Guard Rider Guide

@@ -1,5 +1,5 @@
 ---
-id: dai-ichi-ci-plus
+id: dai_ichi_ci_plus
 name: Dai-ichi CI Plus
 category: Rider
 title: Dai-ichi CI Plus Rider Guide
