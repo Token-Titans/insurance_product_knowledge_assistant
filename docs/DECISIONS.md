@@ -30,12 +30,15 @@ Future answers must be grounded in approved product documents, include relevant 
 
 Target Netlify for Next.js and Python-capable hosting for FastAPI. Avoid authentication, complex databases, microservices, Docker, message brokers, and speculative infrastructure unless explicitly requested.
 
+### 008 — Automated backend production deployment
+
+Backend changes merged to `main` are tested in GitHub Actions and deployed over SSH to the Ubuntu production host. The API runs as a systemd service behind Nginx HTTPS. Deployments use commit-specific releases, an atomic symlink, a health check, and rollback to the previous release if activation fails.
+
 ## Pending feature decisions
 
 - LLM provider and model.
 - Document extraction approach.
 - Chunking, indexing, and retrieval implementation.
-- Hosting provider for FastAPI.
 - Whether the should-have n8n follow-up is attempted.
 
 Record an agreed decision here before introducing a new architectural commitment.

@@ -39,6 +39,14 @@ Do not add actual values to documentation or source control. AI and n8n credenti
 - API: `http://localhost:8000`
 - Health: `http://localhost:8000/api/v1/health`
 
+## Production API
+
+- Base URL: `https://13.250.105.96`
+- Health: `https://13.250.105.96/api/v1/health`
+- Runtime environment file: `/etc/insureassist-api.env` on the production host
+
+GitHub Actions deployment configuration is documented in `docs/DEPLOYMENT.md`. Production secrets must stay in GitHub Actions secrets or the root-owned server environment file.
+
 ## Validation
 
 ```bash
@@ -52,4 +60,4 @@ pip install -r requirements.txt
 pytest
 ```
 
-Deployment targets are Netlify for the web app, Python-capable hosting for FastAPI, and n8n Cloud or a hackathon environment for any future automation.
+Deployment targets are Netlify for the web app, the documented Ubuntu host for FastAPI, and n8n Cloud or a hackathon environment for any future automation.
