@@ -1,10 +1,8 @@
 import { z } from "zod";
 
-export const supportedProductIdSchema = z.enum(["product-a", "product-b"]);
-
 export const askRequestSchema = z.object({
   question: z.string().trim().min(1).max(2000),
-  product_ids: z.array(supportedProductIdSchema).optional(),
+  product_id: z.string().trim().min(1).max(64),
 });
 
 export const askSourceSchema = z.object({

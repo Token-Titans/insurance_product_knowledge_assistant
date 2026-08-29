@@ -9,8 +9,8 @@ import type { AskRequest } from "@/features/assistant/types/ask.types";
 
 export const assistantKeys = {
   all: ["assistant"] as const,
-  ask: (question: string, productIds: string[] = []) =>
-    [...assistantKeys.all, "ask", question, [...productIds].sort()] as const,
+  ask: (question: string, productId: string) =>
+    [...assistantKeys.all, "ask", question, productId] as const,
 };
 
 export function useAskProductQuestion() {
@@ -19,10 +19,7 @@ export function useAskProductQuestion() {
   return useMutation({
     mutationKey: assistantKeys.all,
     mutationFn: async (request: AskRequest) => {
-      const queryKey = assistantKeys.ask(
-        request.question,
-        request.product_ids ?? [],
-      );
+      const queryKey = assistantKeys.ask(request.question, request.product_id);
 
       await queryClient.cancelQueries({ queryKey: assistantKeys.all });
 
