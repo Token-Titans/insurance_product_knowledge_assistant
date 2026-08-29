@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 
-const LOCALES = ["en", "my"] as const;
+const LOCALES = ["my", "en"] as const;
 
 export function LocaleSwitcher() {
   const { i18n, t } = useTranslation("common");

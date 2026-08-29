@@ -18,7 +18,10 @@ export function I18nProvider({ children }: I18nProviderProps) {
     if (storedLanguage === "en" || storedLanguage === "my") {
       void i18n.changeLanguage(storedLanguage);
       document.documentElement.lang = storedLanguage;
+      return;
     }
+
+    document.documentElement.lang = "my";
   }, []);
 
   return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>;

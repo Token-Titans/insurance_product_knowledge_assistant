@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CalendarPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,14 @@ export function FollowUpButton() {
 
   return (
     <>
-      <Button type="button" variant="outline" onClick={() => setIsOpen(true)}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-7 shrink-0 px-2 text-xs text-muted-foreground hover:text-foreground sm:ml-auto"
+        onClick={() => setIsOpen(true)}
+      >
+        <CalendarPlus data-icon="inline-start" />
         {t("answered.follow_up")}
       </Button>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
