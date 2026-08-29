@@ -1,0 +1,15 @@
+---
+description: "FastAPI service contracts, validation, and backend ownership"
+globs: "services/api/**"
+alwaysApply: false
+---
+
+# API service
+
+- Follow existing FastAPI and Pydantic patterns; keep route handlers thin and modules simple.
+- Place public endpoints under `/api/v1` and preserve established request, response, and status-code contracts.
+- Validate all boundary inputs and outputs with explicit Pydantic models.
+- Return stable, actionable errors with appropriate HTTP status codes; never leak stack traces, credentials, or internal provider details.
+- Add only endpoints required by the current product scope. Do not create speculative CRUD, admin, auth, or integration endpoints.
+- Keep backend product rules, knowledge access, provider calls, and validation in backend-owned modules.
+- Do not modify frontend files while implementing API-only work; coordinate contract changes instead of silently breaking consumers.

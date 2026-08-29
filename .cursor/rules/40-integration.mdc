@@ -1,0 +1,14 @@
+---
+description: "Integration, release, and coordination safeguards"
+alwaysApply: true
+---
+
+# Integration and delivery
+
+- Keep `main` runnable and protect it with small, coordinated, reviewable changes.
+- Respect team ownership; coordinate cross-component contract changes before integrating them.
+- Preserve backward compatibility across web, API, knowledge, configuration, and deployment boundaries unless a breaking change is explicitly approved.
+- Prefer incremental edits over rewrites, especially near the hackathon integration freeze.
+- Document required environment variables, defaults, and run steps without recording secret values.
+- During integration freeze, fix demonstrated bugs only and reject scope creep or opportunistic cleanup.
+- Do not merge unresolved conflicts, broken builds, failing required tests, or knowingly incompatible contracts.
