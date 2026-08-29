@@ -46,7 +46,7 @@
     "conditions": "Conditions and exclusions",
     "sources": "Sources",
     "page": "Page {{page}}",
-    "follow_up": "Create follow-up",
+    "follow_up": "Follow up",
     "follow_up_title": "Follow-up is not wired yet",
     "follow_up_body": "This button will later post a simple webhook. It will not add product-knowledge logic.",
     "follow_up_close": "Close"
@@ -55,18 +55,17 @@
     "title": "No grounded information for that",
     "body": "This is not covered in the approved sources I can use. I will not guess."
   },
-  "history": {
-    "title": "This session",
-    "empty": "No questions in this session yet.",
-    "grounded": "Grounded",
-    "unavailable": "Unavailable",
-    "error": "Could not retrieve"
-  },
   "compare": {
-    "title": "Compare products",
-    "body": "Comparison stays a shell until the Integration Lead authorizes a stable compare contract.",
-    "column_a": "Product A",
-    "column_b": "Product B",
-    "empty": "No comparison yet."
+    "toggle": "Compare",
+    "toggle_on": "Compare on",
+    "versus": "vs",
+    "placeholder": "Optional: focus the comparison, or leave blank…",
+    "submit": "Compare",
+    "pending": "Comparing…",
+    "enter_hint": "Enter to compare — a prompt is optional",
+    "active_banner": "Comparing two products",
+    "default_question": "What are the key benefits, conditions, and exclusions?",
+    "result_hint": "Each column is grounded in that product’s approved sources.",
+    "no_answer": "No grounded answer for this product."
   }
 }

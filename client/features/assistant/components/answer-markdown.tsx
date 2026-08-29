@@ -6,10 +6,15 @@ import { cn } from "@/lib/utils";
 
 interface AnswerMarkdownProps {
   content: string;
+  isTyping?: boolean;
   className?: string;
 }
 
-export function AnswerMarkdown({ content, className }: AnswerMarkdownProps) {
+export function AnswerMarkdown({
+  content,
+  isTyping = false,
+  className,
+}: AnswerMarkdownProps) {
   return (
     <div
       className={cn(
@@ -57,6 +62,12 @@ export function AnswerMarkdown({ content, className }: AnswerMarkdownProps) {
       >
         {content}
       </ReactMarkdown>
+      {isTyping ? (
+        <span
+          aria-hidden
+          className="ml-0.5 inline-block h-4 w-px translate-y-0.5 bg-foreground motion-safe:animate-pulse"
+        />
+      ) : null}
     </div>
   );
 }

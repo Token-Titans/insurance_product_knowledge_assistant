@@ -1,65 +1,53 @@
 "use client";
 
-import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { AnswerMarkdown } from "@/features/assistant/components/answer-markdown";
 import { FollowUpButton } from "@/features/assistant/components/follow-up-button";
+import {
+  SourceBadges,
+  hasSourceCitation,
+} from "@/features/assistant/components/source-badges";
+import { useTypedText } from "@/features/assistant/hooks/use-typed-text";
 import { isGroundedResponse } from "@/features/assistant/schemas/ask.schema";
 
-import type { AskResponse, AskSource } from "@/features/assistant/types/ask.types";
+import type { AskResponse } from "@/features/assistant/types/ask.types";
 
 interface AnswerPanelProps {
   response: AskResponse;
+  animate?: boolean;
+  turnId?: string;
 }
 
-function hasSourceCitation(source: AskSource) {
-  return Boolean(
-    source.document.trim() ||
-      source.section.trim() ||
-      source.file.trim() ||
-      source.page != null,
-  );
-}
-
-export function AnswerPanel({ response }: AnswerPanelProps) {
-  const { t } = useTranslation("assistant");
+export function AnswerPanel({
+  response,
+  animate = false,
+  turnId,
+}: AnswerPanelProps) {
+  const { shown, isTyping } = useTypedText(response.answer, animate);
   const showSource = hasSourceCitation(response.source);
   const isGrounded = isGroundedResponse(response.confidence);
 
+  useEffect(() => {
+    if (!isTyping || !turnId) {
+      return;
+    }
+
+    document.getElementById(`ask-turn-${turnId}`)?.scrollIntoView({
+      block: "end",
+      behavior: "auto",
+    });
+  }, [isTyping, shown, turnId]);
+
   return (
     <section className="max-w-prose space-y-3">
-      <AnswerMarkdown content={response.answer} />
-      {showSource ? (
-        <div className="flex flex-wrap gap-1.5">
-          <span className="sr-only">{t("answered.sources")}</span>
-          {response.source.document.trim() ? (
-            <Badge
-              variant="outline"
-              className="h-auto max-w-full whitespace-normal py-1"
-            >
-              {response.source.document}
-            </Badge>
-          ) : null}
-          {response.source.section.trim() ? (
-            <Badge
-              variant="secondary"
-              className="h-auto max-w-full whitespace-normal py-1"
-            >
-              {response.source.section}
-            </Badge>
-          ) : null}
-          {response.source.page != null ? (
-            <Badge
-              variant="secondary"
-              className="h-auto max-w-full whitespace-normal py-1"
-            >
-              {t("answered.page", { page: response.source.page })}
-            </Badge>
-          ) : null}
+      <AnswerMarkdown content={shown} isTyping={isTyping} />
+      {!isTyping && (showSource || isGrounded) ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {showSource ? <SourceBadges source={response.source} /> : null}
+          {isGrounded ? <FollowUpButton /> : null}
         </div>
       ) : null}
-      {isGrounded ? <FollowUpButton /> : null}
     </section>
   );
 }

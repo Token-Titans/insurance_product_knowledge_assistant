@@ -11,7 +11,7 @@ void i18n.use(initReactI18next).init({
     en: { common: enCommon, assistant: enAssistant },
     my: { common: myCommon, assistant: myAssistant },
   },
-  lng: "en",
+  lng: "my",
   fallbackLng: "en",
   supportedLngs: ["en", "my"],
   ns: ["common", "assistant"],

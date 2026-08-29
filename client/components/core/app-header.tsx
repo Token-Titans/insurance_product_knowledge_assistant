@@ -4,16 +4,9 @@ import Link from "next/link";
 import { useTranslation } from "react-i18next";
 
 import { BrandMark } from "@/components/core/brand-mark";
-import { HeaderNavLink } from "@/components/core/header-nav-link";
 import { LocaleSwitcher } from "@/components/core/locale-switcher";
 
-import type { ReactNode } from "react";
-
-interface AppHeaderProps {
-  historyAction?: ReactNode;
-}
-
-export function AppHeader({ historyAction }: AppHeaderProps) {
+export function AppHeader() {
   const { t } = useTranslation("common");
 
   return (
@@ -39,14 +32,6 @@ export function AppHeader({ historyAction }: AppHeaderProps) {
           </span>
         </Link>
         <div className="flex items-center gap-1 sm:gap-2">
-          <nav
-            aria-label={t("app.nav_label")}
-            className="flex items-center md:absolute md:left-1/2 md:-translate-x-1/2"
-          >
-            <HeaderNavLink href="/">{t("app.ask")}</HeaderNavLink>
-            <HeaderNavLink href="/compare">{t("app.compare")}</HeaderNavLink>
-          </nav>
-          {historyAction}
           <LocaleSwitcher />
         </div>
       </div>

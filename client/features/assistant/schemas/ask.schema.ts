@@ -5,6 +5,14 @@ export const askRequestSchema = z.object({
   product_id: z.string().trim().min(1).max(64),
 });
 
+export const compareRequestSchema = z
+  .object({
+    question: z.string().trim().min(1).max(2000),
+    left_product_id: z.string().trim().min(1).max(64),
+    right_product_id: z.string().trim().min(1).max(64),
+  })
+  .refine((value) => value.left_product_id !== value.right_product_id);
+
 export const askSourceSchema = z.object({
   document: z.string(),
   file: z.string(),

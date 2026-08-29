@@ -1,12 +1,5 @@
-import type { Metadata } from "next"
-
-import { CompareShell } from "@/features/assistant/components/compare-shell"
-
-export const metadata: Metadata = {
-  title: "Compare",
-  description: "Product comparison shell",
-}
+import { redirect } from "next/navigation"
 
 export default function ComparePage() {
-  return <CompareShell />
+  redirect("/")
 }

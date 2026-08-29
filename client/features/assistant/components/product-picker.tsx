@@ -11,14 +11,18 @@ import { cn } from "@/lib/utils";
 import { useProducts } from "@/shared/queries/products.query";
 
 interface ProductPickerProps {
+  id?: string;
   value: string;
   disabled?: boolean;
+  hideLabel?: boolean;
   onChange: (productId: string) => void;
 }
 
 export function ProductPicker({
+  id = "product-picker",
   value,
   disabled = false,
+  hideLabel = false,
   onChange,
 }: ProductPickerProps) {
   const { t } = useTranslation("assistant");
@@ -41,9 +45,14 @@ export function ProductPicker({
 
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <span className="shrink-0 text-xs text-muted-foreground" id="product-picker-label">
-        {t("ask.products_label")}
-      </span>
+      {hideLabel ? null : (
+        <span
+          className="shrink-0 text-xs text-muted-foreground"
+          id={`${id}-label`}
+        >
+          {t("ask.products_label")}
+        </span>
+      )}
       <PopoverPrimitive.Root
         open={open}
         onOpenChange={(nextOpen) => {
@@ -59,7 +68,8 @@ export function ProductPicker({
             type="button"
             variant="outline"
             disabled={disabled || products.length === 0}
-            aria-labelledby="product-picker-label"
+            aria-labelledby={hideLabel ? undefined : `${id}-label`}
+            aria-label={hideLabel ? t("ask.products_label") : undefined}
             className="h-8 max-w-56 justify-between gap-2 rounded-full px-3 font-normal"
           >
             <span className="truncate">

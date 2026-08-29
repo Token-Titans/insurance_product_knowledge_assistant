@@ -168,3 +168,12 @@
   background-image: var(--seigaiha-image);
   background-size: 160px 80px;
 }
+
+@utility scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
