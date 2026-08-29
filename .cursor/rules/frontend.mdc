@@ -1,3 +1,1196 @@
 ---
 alwaysApply: true
 ---
+
+# Server vs Client Components
+
+Next.js Server Components are the default.
+
+Do **not** add `"use client"` unless the component actually requires client-side behavior.
+
+Use `"use client"` when a component needs:
+
+- `useState`
+- `useEffect`
+- event handlers
+- browser APIs
+- Zustand hooks
+- TanStack Query hooks
+- Framer Motion client behavior
+- react-hook-form
+- interactive UI
+
+Example:
+
+```tsx
+"use client";
+
+import { useState } from "react";
+
+export function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <button onClick={() => setCount((value) => value + 1)}>{count}</button>
+  );
+}
+```
+
+Prefer keeping the `"use client"` boundary as low in the component tree as practical.
+
+Do not make an entire page a Client Component just because one small child component needs client-side behavior.
+
+---
+
+# File & Folder Structure
+
+Recommended structure:
+
+```text
+src/
+  app/
+    layout.tsx
+    page.tsx
+
+    (auth)/
+      login/
+        page.tsx
+      register/
+        page.tsx
+
+    (dashboard)/
+      dashboard/
+        page.tsx
+        loading.tsx
+
+      products/
+        page.tsx
+        [id]/
+          page.tsx
+
+    api/
+      ...
+
+  components/
+    core/
+    common/
+    layouts/
+    ui/
+
+  features/
+    auth/
+      components/
+      hooks/
+      queries/
+      services/
+      schemas/
+      types/
+
+    products/
+      components/
+      hooks/
+      queries/
+      services/
+      schemas/
+      types/
+
+  shared/
+    hooks/
+    services/
+    queries/
+    stores/
+    lib/
+    types/
+
+  constants/
+  styles/
+  util/
+```
+
+## Where a component goes
+
+- `components/core` → global application pieces used across the application, such as navbar, footer, sidebar.
+- `components/common` → reusable, feature-agnostic components used in multiple features.
+- `components/ui` → smallest generic primitives, usually shadcn/ui components.
+- `components/layouts` → reusable structural shells that arrange page content.
+- `features/<name>/components` → components belonging only to that feature.
+- `features/<name>/hooks` → hooks belonging only to that feature.
+- `features/<name>/queries` → feature-specific TanStack Query hooks.
+- `features/<name>/services` → feature-specific API calls.
+- `features/<name>/schemas` → feature-specific Zod schemas.
+- `features/<name>/types` → feature-specific types.
+
+Promote a feature component to `components/common` only when multiple unrelated features genuinely need it.
+
+---
+
+# Feature vs Shared
+
+If something belongs to a specific business domain, keep it inside that feature.
+
+```text
+features/
+  products/
+    components/
+    hooks/
+    queries/
+    services/
+```
+
+If it is genuinely shared across multiple features:
+
+```text
+shared/
+  hooks/
+  services/
+  queries/
+  stores/
+```
+
+Do not move things into `shared/` simply because they might be reused someday.
+
+---
+
+# Pages
+
+Keep route files thin.
+
+A `page.tsx` should primarily compose the page and pass route parameters/search parameters to the appropriate feature components.
+
+Example:
+
+```tsx
+import { ProductList } from "@/features/products/components/product-list";
+
+export default function ProductsPage() {
+  return <ProductList />;
+}
+```
+
+Do not put large business logic directly inside `page.tsx`.
+
+If a page becomes complex, move the implementation into the corresponding feature.
+
+---
+
+# Dynamic Routes
+
+Use Next.js dynamic route segments.
+
+```text
+app/
+  products/
+    [id]/
+      page.tsx
+```
+
+Example:
+
+```tsx
+interface ProductPageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export default async function ProductPage({ params }: ProductPageProps) {
+  const { id } = await params;
+
+  return <ProductDetails id={id} />;
+}
+```
+
+Use route parameters through Next.js instead of React Router's `useParams`.
+
+---
+
+# Navigation
+
+Use Next.js navigation APIs.
+
+Use:
+
+```tsx
+import Link from "next/link";
+```
+
+for normal navigation.
+
+Use:
+
+```tsx
+import { useRouter } from "next/navigation";
+```
+
+only inside Client Components when programmatic navigation is required.
+
+Do not use React Router:
+
+```tsx
+// ❌ Don't
+import { Link, useNavigate } from "react-router-dom";
+```
+
+Prefer:
+
+```tsx
+// ✅ Do
+import Link from "next/link";
+```
+
+---
+
+# Data Fetching
+
+Prefer Server Components for initial server-side data fetching when possible.
+
+Use direct server-side data fetching for data that does not require client-side interaction.
+
+Use TanStack Query when the data needs:
+
+- client-side caching
+- background refetching
+- mutations
+- optimistic updates
+- client-side filtering/refetching
+- polling
+- interactive server state
+
+Do not automatically put every server request into TanStack Query.
+
+Choose the simplest appropriate approach.
+
+---
+
+# Services vs Queries
+
+API service functions should contain raw API calls.
+
+Example:
+
+```text
+features/
+  products/
+    services/
+      product.service.ts
+    queries/
+      product.query.ts
+```
+
+`product.service.ts`:
+
+```tsx
+export async function getProducts() {
+  const response = await api.get("/products");
+
+  return response.data;
+}
+```
+
+`product.query.ts`:
+
+```tsx
+"use client";
+
+export function useProducts() {
+  return useQuery({
+    queryKey: productKeys.list(),
+    queryFn: getProducts,
+  });
+}
+```
+
+Components should normally use query hooks rather than calling service functions directly when using TanStack Query.
+
+Do not duplicate server state into Zustand.
+
+---
+
+# API Client
+
+Keep the shared Axios instance in:
+
+```text
+shared/
+  services/
+    api.ts
+```
+
+or:
+
+```text
+shared/
+  lib/
+    api.ts
+```
+
+The API client can contain:
+
+- base URL
+- interceptors
+- authentication handling
+- common request configuration
+- error normalization
+
+Do not create a new Axios instance inside every component or feature.
+
+---
+
+# Next.js Route Handlers
+
+Use `app/api/**/route.ts` only when the Next.js application itself needs to expose an HTTP endpoint.
+
+Example:
+
+```text
+app/
+  api/
+    users/
+      route.ts
+```
+
+Do not create Next.js API routes merely because the application already has a separate backend.
+
+If the project uses an external backend, call that backend directly through the shared API service layer.
+
+---
+
+# Component Conventions
+
+Use function components with named exports for reusable components.
+
+```tsx
+export function UserCard({ name, email }: UserCardProps) {
+  return (
+    <div>
+      <h2>{name}</h2>
+      <p>{email}</p>
+    </div>
+  );
+}
+```
+
+Avoid default exports for reusable components.
+
+Next.js route files are an exception because Next.js requires a default export for `page.tsx`, `layout.tsx`, `loading.tsx`, etc.
+
+Example:
+
+```tsx
+export default function ProductsPage() {
+  return <ProductList />;
+}
+```
+
+---
+
+# Props & Typing
+
+Define a `Props` interface above the component.
+
+```tsx
+interface UserCardProps {
+  name: string;
+  email: string;
+  onSelect?: (id: string) => void;
+}
+
+export function UserCard({ name, email, onSelect }: UserCardProps) {
+  // ...
+}
+```
+
+Rules:
+
+- No `any`.
+- Use `unknown` plus narrowing when the type is genuinely unknown.
+- Destructure props in the function signature.
+- Optional props should get defaults through destructuring.
+- Avoid prop drilling more than 2 levels deep.
+- Prefer composition or context when appropriate.
+
+---
+
+# Component Size
+
+Keep components small and focused.
+
+If a component exceeds roughly 150–200 lines or mixes multiple responsibilities, consider splitting it.
+
+Split when a component contains several of:
+
+- data fetching
+- complex business logic
+- large JSX
+- multiple interactive sections
+- form handling
+- complicated state management
+
+Do not split components merely to make files smaller.
+
+Prefer meaningful boundaries over arbitrary extraction.
+
+---
+
+# Composition
+
+Prefer composition over configuration.
+
+Avoid components with excessive boolean props:
+
+```tsx
+// ❌ Avoid
+<Card showHeader showFooter compact bordered showActions />
+```
+
+Prefer composition:
+
+```tsx
+<Card>
+  <CardHeader />
+  <CardContent />
+  <CardFooter />
+</Card>
+```
+
+Use `children` or explicit slot-like props when composition improves clarity.
+
+---
+
+# Hooks
+
+Custom hooks always start with `use`.
+
+Shared hooks:
+
+```text
+shared/hooks/
+```
+
+Feature hooks:
+
+```text
+features/<feature>/hooks/
+```
+
+A hook should generally do one thing.
+
+If a hook returns many unrelated values, reconsider its responsibilities.
+
+Never call hooks conditionally or inside loops.
+
+---
+
+# State Management
+
+## Local UI State
+
+Use:
+
+```tsx
+useState;
+useReducer;
+```
+
+for state that belongs to one component or a small component subtree.
+
+Examples:
+
+- modal open state
+- selected tab
+- input UI state
+- temporary UI state
+
+## Zustand
+
+Use Zustand for client-only state that needs to be shared or persisted across routes.
+
+Examples:
+
+- sidebar state
+- theme preferences
+- multi-step client-side state
+- temporary client workflows
+
+Do not put server data into Zustand.
+
+Select only the state needed:
+
+```tsx
+const user = useAuthStore((state) => state.user);
+```
+
+Avoid subscribing to the entire store.
+
+---
+
+# Server State
+
+Server data should use:
+
+- Server Components when appropriate
+- TanStack Query when client-side server-state management is needed
+
+Do not copy query data into:
+
+```tsx
+useState;
+```
+
+or Zustand unless there is a specific, justified reason.
+
+---
+
+# TanStack Query
+
+Use consistent query keys.
+
+```tsx
+export const productKeys = {
+  all: ["products"] as const,
+  list: () => [...productKeys.all, "list"] as const,
+  detail: (id: string) => [...productKeys.all, "detail", id] as const,
+};
+```
+
+Set sensible:
+
+- `staleTime`
+- `gcTime`
+- retry behavior
+- refetch behavior
+
+Do not refetch aggressively without a reason.
+
+After mutations, invalidate the relevant queries inside the mutation hook.
+
+```tsx
+onSuccess: async () => {
+  await queryClient.invalidateQueries({
+    queryKey: productKeys.all,
+  });
+};
+```
+
+For simple mutations where immediate UI feedback matters, optimistic updates are acceptable, but still reconcile with the server afterward.
+
+---
+
+# Styling
+
+Use Tailwind CSS directly in JSX.
+
+Use shadcn/ui components as the base for primitives.
+
+Avoid creating one-off CSS files unless the styling genuinely cannot be expressed cleanly with Tailwind.
+
+For repeated class combinations:
+
+- use `cva`
+- create a reusable component
+- use `cn` when appropriate
+
+Do not create giant conditional class strings.
+
+---
+
+# Theming & Colors
+
+Never use arbitrary/raw colors inside components.
+
+```tsx
+// ❌ Don't
+<div className="bg-[#1a73e8]" />
+<div className="text-red-500" />
+<div className="bg-blue-600" />
+```
+
+Use semantic theme tokens:
+
+```tsx
+// ✅ Do
+<div className="bg-primary text-primary-foreground" />
+<div className="bg-destructive text-destructive-foreground" />
+```
+
+All application colors should come from semantic theme tokens.
+
+Examples:
+
+```text
+background
+foreground
+primary
+primary-foreground
+secondary
+secondary-foreground
+muted
+muted-foreground
+accent
+accent-foreground
+destructive
+destructive-foreground
+border
+input
+ring
+success
+warning
+info
+```
+
+If a required semantic color does not exist, add it to the theme first.
+
+Do not introduce arbitrary Tailwind colors as a shortcut.
+
+---
+
+# Forms
+
+Use react-hook-form for forms with more than 1–2 fields.
+
+Use Zod for validation.
+
+Example:
+
+```tsx
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+```
+
+Use `zodResolver`.
+
+Do not duplicate validation logic manually beside the Zod schema.
+
+Reusable form fields belong in:
+
+```text
+components/common/
+```
+
+and should be built on top of shadcn/ui primitives.
+
+---
+
+# Localization
+
+Use `react-i18next`.
+
+Do not hardcode user-facing strings in components.
+
+```tsx
+const { t } = useTranslation("auth");
+
+return <h1>{t("login.title")}</h1>;
+```
+
+Translation files:
+
+```text
+locales/
+  en/
+    common.json
+    auth.json
+
+  th/
+    common.json
+    auth.json
+
+  zh/
+    common.json
+    auth.json
+```
+
+Use namespaces by feature/area.
+
+Prefer consistent keys such as:
+
+```text
+auth.login.title
+auth.login.submit_button
+```
+
+Do not use literal English text as translation keys.
+
+Use interpolation for dynamic content:
+
+```tsx
+t("cart.item_count", { count });
+```
+
+Do not manually concatenate translated strings.
+
+Use `Intl` or i18next formatting capabilities for:
+
+- dates
+- numbers
+- currencies
+- percentages
+
+Do not hardcode locale-specific formatting.
+
+Every new translation key must be added to all supported languages.
+
+---
+
+# Next.js Metadata
+
+Use Next.js Metadata APIs instead of manually manipulating `<head>`.
+
+For static metadata:
+
+```tsx
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Products",
+  description: "Product management",
+};
+```
+
+For dynamic metadata, use `generateMetadata`.
+
+Do not use React Helmet or manually modify `document.title` for normal page metadata.
+
+---
+
+# Images
+
+Use Next.js `Image` for application images.
+
+```tsx
+import Image from "next/image";
+
+<Image src={imageUrl} alt={alt} width={400} height={300} />;
+```
+
+Prefer optimized image formats such as WebP/AVIF where appropriate.
+
+Use appropriately sized images.
+
+Do not ship a 4000px image when a 200px image is required.
+
+Configure external image domains through Next.js configuration rather than bypassing optimization unnecessarily.
+
+Avoid raw `<img>` unless there is a specific reason.
+
+---
+
+# Image Components
+
+Image display follows shared components in:
+
+```text
+components/common/image/
+```
+
+## `image-cropper.tsx`
+
+Wraps `react-image-crop`.
+
+Used for:
+
+- avatars
+- product images
+- upload/edit flows
+
+The component produces the cropped blob/file.
+
+It should not know about API upload logic.
+
+## `single-image.tsx`
+
+Renders one thumbnail.
+
+Clicking it opens `image-dialog`.
+
+No gallery controls are needed for a single image.
+
+## `image-gallery.tsx`
+
+Renders multiple thumbnails.
+
+If the number of images exceeds the visible slot count, show:
+
+```text
++N
+```
+
+on the last visible thumbnail.
+
+Clicking any thumbnail opens `image-dialog` at that image's index.
+
+## `image-dialog.tsx`
+
+One shared dialog for image viewing.
+
+Always receive an array of images.
+
+For multiple images:
+
+- use shadcn/Embla Carousel
+- support next/previous navigation
+- support swipe
+- show position such as `2 / 9`
+
+For one image:
+
+- render the image directly
+- do not mount the carousel
+
+All image viewing/navigation logic belongs in `image-dialog`.
+
+---
+
+# Navigation & Loading
+
+Use Next.js route-level loading states.
+
+Example:
+
+```text
+app/
+  dashboard/
+    page.tsx
+    loading.tsx
+```
+
+Prefer `loading.tsx` and React Suspense for route/section loading states instead of manually implementing loading state for every page.
+
+Use Suspense boundaries when independently loading sections can improve perceived performance.
+
+---
+
+# Error Handling
+
+Use Next.js route-level error boundaries where appropriate.
+
+Example:
+
+```text
+app/
+  dashboard/
+    error.tsx
+```
+
+`error.tsx` must be a Client Component.
+
+Keep error UI focused on recovery and user feedback.
+
+Do not expose raw backend errors directly to users.
+
+Normalize API errors in the service/API layer when possible.
+
+---
+
+# Performance & Optimization
+
+## Don't Memoize by Default
+
+Do not automatically use:
+
+```tsx
+React.memo;
+useMemo;
+useCallback;
+```
+
+Only use them when there is a demonstrated performance reason.
+
+Measure first using:
+
+- React DevTools Profiler
+- browser performance tools
+- Next.js profiling/build analysis
+
+Avoid optimization that only adds complexity.
+
+---
+
+# Next.js Code Splitting
+
+Next.js automatically performs route-level code splitting.
+
+Do not manually use:
+
+```tsx
+React.lazy();
+```
+
+for route pages.
+
+Use Next.js routing and dynamic imports only when a component is genuinely expensive or client-only.
+
+Example:
+
+```tsx
+import dynamic from "next/dynamic";
+
+const HeavyEditor = dynamic(() => import("./heavy-editor"), {
+  ssr: false,
+});
+```
+
+Do not dynamically import tiny components just for the sake of code splitting.
+
+---
+
+# Rendering Strategy
+
+Choose the simplest appropriate rendering strategy.
+
+Prefer:
+
+1. Server Components for static/server-rendered content.
+2. Client Components only for interactive behavior.
+3. TanStack Query when client-side server-state management is actually needed.
+4. Suspense for independently loading sections.
+5. Dynamic imports for genuinely heavy client-side components.
+
+Do not make everything client-side by default.
+
+---
+
+# Lists
+
+Always use stable unique keys.
+
+```tsx
+{
+  users.map((user) => <UserCard key={user.id} user={user} />);
+}
+```
+
+Do not use array indexes as keys when items have stable IDs.
+
+For very large lists, use virtualization such as:
+
+```text
+@tanstack/react-virtual
+```
+
+Do not render hundreds or thousands of complex DOM nodes unnecessarily.
+
+---
+
+# Debouncing & Throttling
+
+Debounce or throttle expensive triggers such as:
+
+- search
+- resize
+- scroll
+- autosave
+- expensive calculations
+
+Do not fire API requests on every keystroke unless that behavior is intentional and appropriate.
+
+---
+
+# Bundle Hygiene
+
+Import only what is needed from large libraries.
+
+Avoid adding a dependency when:
+
+- the functionality is trivial
+- an existing dependency already provides it
+- the browser/Next.js already provides an appropriate API
+
+Before adding a large dependency, consider its bundle impact.
+
+---
+
+# Animation
+
+Use Framer Motion for meaningful animations.
+
+Good uses:
+
+- enter/exit transitions
+- modal animations
+- layout transitions
+- interactive feedback
+- gesture interactions
+
+Keep animations subtle and short, generally around 150–300ms.
+
+Do not animate purely for decoration.
+
+Use `AnimatePresence` for mount/unmount transitions.
+
+Prefer transform-based animations:
+
+```text
+x
+y
+scale
+opacity
+```
+
+over layout-affecting properties such as:
+
+```text
+width
+height
+top
+left
+```
+
+Respect `prefers-reduced-motion`.
+
+Use `useReducedMotion` where appropriate.
+
+Reusable animation variants should live in a shared location such as:
+
+```text
+shared/motion-variants.ts
+```
+
+---
+
+# Imports
+
+Group imports:
+
+1. External packages
+2. Internal absolute imports (`@/...`)
+3. Relative imports
+4. Types
+
+Example:
+
+```tsx
+import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+
+import { Button } from "@/components/ui/button";
+import { cn } from "@/shared/lib/utils";
+
+import { UserCard } from "./user-card";
+
+import type { User } from "@/shared/types/user";
+```
+
+Prefer absolute imports:
+
+```tsx
+@/components/...
+@/features/...
+@/shared/...
+```
+
+over deep relative imports:
+
+```tsx
+../../../components/...
+```
+
+---
+
+# Naming
+
+## Files
+
+Use `kebab-case`:
+
+```text
+user-card.tsx
+use-auth.ts
+product.service.ts
+product.query.ts
+product-list.tsx
+```
+
+## Components
+
+Use PascalCase:
+
+```text
+UserCard
+DashboardLayout
+ProductList
+```
+
+## Hooks
+
+Use camelCase with `use` prefix:
+
+```text
+useAuth
+useDebounce
+useProducts
+```
+
+## Functions & Variables
+
+Use camelCase:
+
+```text
+getUser
+handleSubmit
+isLoading
+```
+
+## Constants
+
+Module-level constants that never change use:
+
+```text
+UPPER_SNAKE_CASE
+```
+
+Example:
+
+```tsx
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+```
+
+## Booleans
+
+Boolean names should read like questions:
+
+```text
+isLoading
+hasError
+canSubmit
+shouldShow
+```
+
+## Folders
+
+Use kebab-case:
+
+```text
+features/
+  product-management/
+```
+
+Avoid:
+
+```text
+ProductManagement/
+productManagement/
+```
+
+---
+
+# General Principles
+
+- Prefer simple solutions over abstractions created "for the future".
+- Do not introduce a layer unless it solves a current problem.
+- Keep business logic close to the feature that owns it.
+- Keep reusable UI generic.
+- Keep server state separate from client state.
+- Prefer Server Components when client behavior is not required.
+- Keep Client Components as small as practical.
+- Let Next.js handle routing, rendering, code splitting, metadata, and image optimization.
+- Use TanStack Query for client-side server-state management, not as a universal data-fetching requirement.
+- Measure performance before optimizing.
+- Favor composition over configuration.
+- Avoid premature abstraction.
+- Avoid unnecessary files and folders.
+- Optimize for readability and maintainability first.
