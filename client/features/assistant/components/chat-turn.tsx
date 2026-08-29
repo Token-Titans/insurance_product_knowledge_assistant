@@ -1,7 +1,6 @@
 import { AnswerPanel } from "@/features/assistant/components/answer-panel";
 import { AskErrorBanner } from "@/features/assistant/components/ask-error-banner";
 import { RetrieveLoading } from "@/features/assistant/components/retrieve-loading";
-import { UnavailableState } from "@/features/assistant/components/unavailable-state";
 
 import type { ChatTurn } from "@/features/assistant/types/ask-screen.types";
 
@@ -21,11 +20,9 @@ export function ChatTurnItem({ turn }: ChatTurnItemProps) {
       {turn.status === "error" && turn.errorCode ? (
         <AskErrorBanner code={turn.errorCode} />
       ) : null}
-      {turn.status === "answered" && turn.response ? (
+      {(turn.status === "answered" || turn.status === "unavailable") &&
+      turn.response ? (
         <AnswerPanel response={turn.response} />
-      ) : null}
-      {turn.status === "unavailable" ? (
-        <UnavailableState message={turn.response?.answer} />
       ) : null}
     </article>
   );

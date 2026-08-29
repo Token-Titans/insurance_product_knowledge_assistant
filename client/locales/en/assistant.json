@@ -5,6 +5,7 @@
     "placeholder": "Ask about benefits, conditions, or exclusions…",
     "submit": "Ask",
     "pending": "Asking…",
+    "enter_hint": "Enter to ask, Shift+Enter for a new line",
     "error_title": "Could not retrieve that answer",
     "errors": {
       "INVALID_REQUEST": "The question could not be sent. Check the text and try again.",
@@ -44,6 +45,7 @@
     "important_points": "Important points",
     "conditions": "Conditions and exclusions",
     "sources": "Sources",
+    "page": "Page {{page}}",
     "follow_up": "Create follow-up",
     "follow_up_title": "Follow-up is not wired yet",
     "follow_up_body": "This button will later post a simple webhook. It will not add product-knowledge logic.",

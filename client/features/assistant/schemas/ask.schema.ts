@@ -7,13 +7,19 @@ export const askRequestSchema = z.object({
 
 export const askSourceSchema = z.object({
   document: z.string(),
+  file: z.string(),
   section: z.string(),
+  page: z.number().int().nullable().optional(),
 });
 
 export const askResponseSchema = z.object({
   answer: z.string(),
-  important_points: z.array(z.string()),
-  conditions: z.array(z.string()),
-  sources: z.array(askSourceSchema),
-  confidence: z.enum(["grounded", "unavailable"]),
+  important_conditions: z.array(z.string()),
+  exclusions: z.array(z.string()),
+  source: askSourceSchema,
+  confidence: z.number().min(0).max(1),
 });
+
+export function isGroundedResponse(confidence: number) {
+  return confidence > 0;
+}
