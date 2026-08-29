@@ -24,3 +24,4 @@ def test_openapi_schema_includes_frozen_paths() -> None:
     assert "/products/{id}" in paths
     assert "/products/{id}/suggested-questions" in paths
     assert "/assistant/ask" in paths
+    assert "/assistant/follow-up" in paths

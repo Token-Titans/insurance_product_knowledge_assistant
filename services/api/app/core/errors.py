@@ -27,3 +27,21 @@ def product_not_found(product_id: str) -> ApiError:
         "PRODUCT_NOT_FOUND",
         f"Unknown product '{product_id}'.",
     )
+
+
+def automation_unavailable() -> ApiError:
+    """Return HTTP 503 when the n8n webhook is missing or unreachable."""
+
+    return ApiError(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        "AUTOMATION_UNAVAILABLE",
+        "Follow-up service is not configured.",
+    )
+
+
+def follow_up_refused(
+    message: str = "The follow-up could not be scheduled.",
+) -> ApiError:
+    """Return HTTP 400 when n8n refuses the follow-up payload."""
+
+    return ApiError(status.HTTP_400_BAD_REQUEST, "FOLLOW_UP_REFUSED", message)

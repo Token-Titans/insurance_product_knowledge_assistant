@@ -1,8 +1,8 @@
 export const SUGGESTED_QUESTIONS = [
   {
-    id: "hospital",
-    titleKey: "suggested.hospital_title",
-    labelKey: "suggested.hospital",
+    id: "eligibility",
+    titleKey: "suggested.eligibility_title",
+    labelKey: "suggested.eligibility",
   },
   {
     id: "exclusion",

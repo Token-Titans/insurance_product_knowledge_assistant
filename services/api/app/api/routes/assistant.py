@@ -3,8 +3,9 @@
 from fastapi import APIRouter, Depends
 
 from app.core.config import Settings, get_settings
-from app.models.assistant import AskRequest, AssistantResponse
+from app.models.assistant import AskRequest, AssistantResponse, FollowUpRequest, FollowUpResponse
 from app.services.assistant import ask_product_question
+from app.services.follow_up import send_follow_up
 
 router = APIRouter(prefix="/assistant", tags=["Assistant"])
 
@@ -28,3 +29,22 @@ async def ask(
     """Answer a sales-agent product question from approved documents."""
 
     return await ask_product_question(payload.product_id, payload.question, settings)
+
+
+@router.post(
+    "/follow-up",
+    response_model=FollowUpResponse,
+    summary="Schedule a follow-up reminder",
+    description=(
+        "Forwards customer_name, product, follow_up_date, and note to the n8n "
+        "webhook. n8n waits until the date and emails the sales agent. FastAPI "
+        "does not send email and does not wait for the reminder."
+    ),
+)
+async def follow_up(
+    payload: FollowUpRequest,
+    settings: Settings = Depends(get_settings),
+) -> FollowUpResponse:
+    """Hand a scheduled follow-up to n8n."""
+
+    return await send_follow_up(payload, settings)
