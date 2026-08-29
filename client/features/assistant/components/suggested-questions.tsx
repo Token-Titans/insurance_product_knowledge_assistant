@@ -1,6 +1,6 @@
 "use client";
 
-import { HeartPulse, ShieldOff, Wallet, type LucideIcon } from "lucide-react";
+import { ShieldOff, UserRound, Wallet, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { SUGGESTED_QUESTIONS } from "@/features/assistant/constants/products";
@@ -14,7 +14,7 @@ const SUGGESTION_ICONS: Record<
   (typeof SUGGESTED_QUESTIONS)[number]["id"],
   LucideIcon
 > = {
-  hospital: HeartPulse,
+  eligibility: UserRound,
   exclusion: ShieldOff,
   unavailable: Wallet,
 };

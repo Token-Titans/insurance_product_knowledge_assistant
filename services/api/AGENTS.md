@@ -3,7 +3,7 @@
 ## Scope
 
 - Keep all API work inside `services/api`.
-- Canonical routes: `/health`, `/products`, `/products/{id}`, `/assistant/ask`.
+- Canonical routes: `/health`, `/products`, `/products/{id}`, `/products/{id}/suggested-questions`, `/assistant/ask` , `/assistant/follow-up`.
 - The same handlers are mounted under `/api/v1` for compatibility.
 - Keep configuration in `app/core/config.py` and load values from environment variables.
 - Define Pydantic response models for API responses.
@@ -18,12 +18,16 @@
 
 - `GET /health`
 - `GET /products` and `GET /products/{id}`
+- `GET /products/{id}/suggested-questions` — sales prompts from approved document headings
 - `POST /assistant/ask` — grounded answers from `app/knowledge/approved/{product_id}.pdf`
   when present, otherwise `{product_id}.md`. OpenAI is used when `OPENAI_API_KEY` is set;
   otherwise extractive retrieval. Unreadable PDFs fall back to markdown.
+- `POST /assistant/follow-up` — posts `customer_name`, `product`, `follow_up_date`,
+  and `note` to `N8N_WEBHOOK_URL`. n8n waits and emails the agent. Leave the URL
+  empty to disable.
 
 ## Boundaries
 
 - Do not modify `apps/web`.
-- Do not implement compare, n8n, authentication, or databases unless explicitly requested.
+- Do not implement compare, authentication, or databases unless explicitly requested.
 - Keep the API key server-side in `.env`. Never commit secrets.

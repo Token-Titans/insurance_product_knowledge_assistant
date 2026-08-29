@@ -7,6 +7,7 @@ from app.models.assistant import (
     ProductDetail,
     ProductSummary,
     SourceReference,
+    SuggestedQuestion,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "ProductDetail",
     "ProductSummary",
     "SourceReference",
+    "SuggestedQuestion",
 ]

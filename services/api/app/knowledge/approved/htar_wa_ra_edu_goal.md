@@ -1,5 +1,5 @@
 ---
-id: htar-wa-ra-edu-goal
+id: htar_wa_ra_edu_goal
 name: Htar-Wa-Ra Edu Goal
 category: Education Savings
 title: Htar-Wa-Ra Edu Goal Product Guide
