@@ -87,6 +87,9 @@ function CompareColumn({
               {t("unavailable.body")}
             </p>
           ) : null}
+          {isGrounded && column.status === "answered" ? (
+            <FollowUpButton productId={column.productId} />
+          ) : null}
         </>
       ) : null}
     </section>
@@ -114,11 +117,6 @@ export function ComparePending() {
 export function ComparePanel({ turn }: ComparePanelProps) {
   const { t } = useTranslation("assistant");
   const { data: products = [] } = useProducts();
-  const showFollowUp =
-    (turn.left.response != null &&
-      isGroundedResponse(turn.left.response.confidence)) ||
-    (turn.right.response != null &&
-      isGroundedResponse(turn.right.response.confidence));
 
   return (
     <div className="space-y-3">
@@ -135,11 +133,6 @@ export function ComparePanel({ turn }: ComparePanelProps) {
           name={productLabel(products, turn.right.productId)}
         />
       </div>
-      {showFollowUp ? (
-        <div className="flex justify-start">
-          <FollowUpButton />
-        </div>
-      ) : null}
     </div>
   );
 }

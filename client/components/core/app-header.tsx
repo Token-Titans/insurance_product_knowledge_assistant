@@ -10,7 +10,7 @@ export function AppHeader() {
   const { t } = useTranslation("common");
 
   return (
-    <header className="sticky top-0 z-40 overflow-hidden bg-horizon-band text-primary-foreground shadow-sm">
+    <header className="sticky top-0 z-40 shrink-0 overflow-hidden bg-horizon-band text-primary-foreground shadow-sm">
       <div
         aria-hidden
         className="absolute inset-y-0 right-0 w-1/3 origin-top-right -skew-x-16 bg-primary-foreground/10"

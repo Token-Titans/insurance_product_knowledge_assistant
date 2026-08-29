@@ -57,6 +57,7 @@ export function ChatTurnItem({ turn }: ChatTurnItemProps) {
       turn.response ? (
         <AnswerPanel
           response={turn.response}
+          productId={turn.productId}
           animate={turn.shouldType}
           turnId={turn.id}
         />

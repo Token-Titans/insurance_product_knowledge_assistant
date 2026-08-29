@@ -11,6 +11,8 @@
       "INVALID_REQUEST": "The question could not be sent. Check the text and try again.",
       "UNKNOWN_PRODUCT": "That product is not in the approved set.",
       "PRODUCT_NOT_FOUND": "That product is not in the approved set.",
+      "AUTOMATION_UNAVAILABLE": "Follow-up is not available right now.",
+      "FOLLOW_UP_REFUSED": "Follow-up could not be scheduled.",
       "HTTP_ERROR": "The assistant is unavailable right now. Try again shortly.",
       "generic": "The assistant is unavailable right now. Try again shortly."
     },
@@ -47,9 +49,20 @@
     "sources": "Sources",
     "page": "Page {{page}}",
     "follow_up": "Follow up",
-    "follow_up_title": "Follow-up is not wired yet",
-    "follow_up_body": "This button will later post a simple webhook. It will not add product-knowledge logic.",
-    "follow_up_close": "Close"
+    "follow_up_title": "Create follow-up",
+    "follow_up_body": "We'll email you a reminder on the date you choose. A first name is enough.",
+    "follow_up_customer_name": "Customer name",
+    "follow_up_date": "Follow-up date",
+    "follow_up_note": "Note",
+    "follow_up_submit": "Schedule",
+    "follow_up_pending": "Scheduling…",
+    "follow_up_success": "Follow-up for {{product}} is scheduled on {{date}}.",
+    "follow_up_close": "Close",
+    "follow_up_customer_name_invalid": "Enter a customer name (up to 120 characters).",
+    "follow_up_date_invalid": "Choose today or a later date.",
+    "follow_up_note_invalid": "Enter a note (up to 2000 characters).",
+    "follow_up_invalid": "Check the name, date, and note, then try again.",
+    "follow_up_pick_product": "That product is not in the approved set. Choose the product again."
   },
   "unavailable": {
     "title": "No grounded information for that",

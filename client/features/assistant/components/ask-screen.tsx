@@ -54,7 +54,7 @@ export function AskScreen() {
               <div ref={bottomRef} />
             </div>
           </div>
-          <div className="shrink-0 border-t border-border bg-background/80 px-4 py-4 sm:px-6">
+          <div className="shrink-0 border-t border-border bg-background/80 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
             <AskComposer
               isPending={isPending}
               isCompare={isCompare}
