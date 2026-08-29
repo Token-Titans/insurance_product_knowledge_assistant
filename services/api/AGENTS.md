@@ -12,8 +12,15 @@
 - Run locally: `uvicorn app.main:app --reload`
 - Run tests: `pytest`
 
-## Current boundaries
+## Implemented
 
-This foundation contains only the health endpoint. Do not add AI, retrieval,
-document, ask/compare, automation, authentication, database, Docker, or product
-features without an explicit request.
+- `GET /api/v1/health`
+- `POST /api/v1/assistant/ask` — grounded product answers from approved markdown in
+  `app/knowledge/approved/`. OpenAI is used when `OPENAI_API_KEY` is set; otherwise
+  the service returns an extractive answer from retrieved sections.
+
+## Boundaries
+
+- Do not modify `apps/web`.
+- Do not implement compare, n8n, authentication, or databases unless explicitly requested.
+- Keep the API key server-side in `.env`. Never commit secrets.

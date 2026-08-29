@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:3000"]
     )
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
 
     @field_validator("cors_origins", mode="before")
     @classmethod

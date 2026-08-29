@@ -2,7 +2,7 @@
 
 Base path: `/api/v1`
 
-Only the health endpoint is implemented. All other endpoints are documentation for planned product work and must not be treated as available.
+`GET /api/v1/health` and `POST /api/v1/assistant/ask` are implemented. Compare remains planned.
 
 ## Health
 
@@ -23,9 +23,9 @@ Response:
 
 `POST /api/v1/assistant/ask`
 
-**Status: PLANNED**
+**Status: IMPLEMENTED**
 
-Future example request:
+Request:
 
 ```json
 {
@@ -34,7 +34,10 @@ Future example request:
 }
 ```
 
-Future example response:
+- `question` is required (1–2000 characters).
+- `product_ids` is optional. Supported values: `product-a`, `product-b`. Unknown IDs return `UNKNOWN_PRODUCT`. When omitted, approved documents for all supported products are searched.
+
+Response:
 
 ```json
 {
@@ -51,6 +54,10 @@ Future example response:
 }
 ```
 
+`confidence` is `"grounded"` when approved sources support the answer, or `"unavailable"` when they do not. Unavailable information is still HTTP 200 with a safe message and empty `sources`.
+
+When `OPENAI_API_KEY` is not set, the API still answers from retrieved approved sections (extractive fallback). With a key, the backend calls OpenAI and validates the structured result before returning it.
+
 ## Compare Products
 
 `POST /api/v1/assistant/compare`
@@ -61,7 +68,7 @@ The request and response schema will be agreed before implementation. Do not imp
 
 ## Standard error
 
-Planned product endpoints use:
+Product endpoints use:
 
 ```json
 {
@@ -71,6 +78,12 @@ Planned product endpoints use:
   }
 }
 ```
+
+Ask endpoint error codes:
+
+- `INVALID_REQUEST` — missing or invalid body (HTTP 400 or 422).
+- `UNKNOWN_PRODUCT` — `product_ids` contains an unsupported id (HTTP 400).
+- `HTTP_ERROR` — other HTTP errors.
 
 ## API governance
 
@@ -83,4 +96,4 @@ For every API change:
 5. Test integration.
 6. Commit clearly.
 
-Never silently change a request, response, path, or error shape. A planned example does not authorize implementation.
+Never silently change a request, response, path, or error shape. Coordinate with Developer 4 before changing this contract.

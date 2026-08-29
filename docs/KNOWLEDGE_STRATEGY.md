@@ -44,6 +44,8 @@ Grounded answer + citation
 
 The exact model, extraction method, chunking approach, index, retrieval implementation, and confidence handling will be selected during feature development. Do not add an SDK, vector database, PDF library, ingestion pipeline, or generic autonomous agent during foundation initialization.
 
+Hackathon implementation (see `docs/DECISIONS.md` 008): approved markdown is split on `##` sections; retrieval is keyword overlap; generation is OpenAI Chat Completions when `OPENAI_API_KEY` is set, otherwise extractive text from retrieved sections.
+
 ## Safe answer behavior
 
 If the approved sources do not support an answer, state that the information is unavailable and identify what source is needed. Never fabricate a product benefit, limit, eligibility rule, exclusion, or coverage condition.
