@@ -1,0 +1,154 @@
+{
+  "name": "InsureAssist Knowledge Gap Escalation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "insureassist-knowledge-gap",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-gap",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "insureassist-knowledge-gap"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "k1",
+              "name": "question",
+              "value": "={{ $json.body?.question || $json.question || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "k2",
+              "name": "confidence",
+              "value": "={{ $json.body?.confidence || $json.confidence || 'unsupported' }}",
+              "type": "string"
+            },
+            {
+              "id": "k3",
+              "name": "requested_source",
+              "value": "={{ $json.body?.requested_source || $json.requested_source || 'Not specified' }}",
+              "type": "string"
+            },
+            {
+              "id": "k4",
+              "name": "agent_name",
+              "value": "={{ $json.body?.agent_name || $json.agent_name || 'Agent' }}",
+              "type": "string"
+            },
+            {
+              "id": "k5",
+              "name": "logged_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "normalize-gap",
+      "name": "Normalize",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "kq1",
+              "leftValue": "={{ $json.question }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-question",
+      "name": "Question present?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@example.com",
+        "toEmail": "knowledge-owner@example.com",
+        "subject": "=Knowledge gap: {{ $json.question }}",
+        "emailFormat": "text",
+        "text": "=InsureAssist could not answer a product question from approved sources.\n\nQuestion\n{{ $json.question }}\n\nConfidence returned\n{{ $json.confidence }}\n\nSource needed to answer this\n{{ $json.requested_source }}\n\nRaised by\n{{ $json.agent_name }}\n\nLogged at\n{{ $json.logged_at }}\n\nAdd or approve the required document section so future answers can be grounded.",
+        "options": {}
+      },
+      "id": "notify-owner",
+      "name": "Notify Knowledge Owner",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [700, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, message: 'Knowledge gap escalated' }) }}",
+        "options": {}
+      },
+      "id": "respond-ok-gap",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [940, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, detail: { code: 'INVALID_REQUEST', message: 'A question is required.' } }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "respond-bad-gap",
+      "name": "Respond 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [700, 430]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]]
+    },
+    "Normalize": {
+      "main": [[{ "node": "Question present?", "type": "main", "index": 0 }]]
+    },
+    "Question present?": {
+      "main": [
+        [{ "node": "Notify Knowledge Owner", "type": "main", "index": 0 }],
+        [{ "node": "Respond 400", "type": "main", "index": 0 }]
+      ]
+    },
+    "Notify Knowledge Owner": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
