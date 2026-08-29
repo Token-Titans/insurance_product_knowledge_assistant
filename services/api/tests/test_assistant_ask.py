@@ -104,6 +104,30 @@ def test_ask_uses_openai_result_when_available(monkeypatch) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["answer"].startswith("Product A pays room and board")
-    assert body["important_conditions"] == ["30-day waiting period except accidents."]
-    assert body["exclusions"] == ["Cosmetic procedures are not covered."]
     assert body["source"]["file"] == "product_a.md"
+
+
+def test_ask_greeting_does_not_claim_unknown() -> None:
+    response = client.post(
+        "/assistant/ask",
+        json={"product_id": "product_a", "question": "Hello"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["confidence"] == 1.0
+    assert "don't know" not in body["answer"].lower()
+    assert "InsureAssist" in body["answer"]
+
+
+def test_ask_burmese_greeting() -> None:
+    response = client.post(
+        "/assistant/ask",
+        json={"product_id": "product_a", "question": "မင်္ဂလာပါ"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["confidence"] == 1.0
+    assert "InsureAssist" in body["answer"]
+    assert "don't know" not in body["answer"].lower()

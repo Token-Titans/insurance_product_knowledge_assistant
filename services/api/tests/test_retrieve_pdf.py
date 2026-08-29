@@ -55,3 +55,19 @@ def test_search_falls_back_to_markdown_when_pdf_unreadable(
     assert top.file == "product_a.md"
     assert top.page is None
     assert "RM300" in top.text
+
+
+def test_search_accepts_hyphenated_dai_ichi_id() -> None:
+    load_documents.cache_clear()
+    ranked = search_documents("What is the living benefit?", "dai-ichi-life-pro")
+
+    assert ranked
+    assert ranked[0].section.product_id == "dai-ichi-life-pro"
+
+
+def test_search_maps_burmese_benefit_question() -> None:
+    load_documents.cache_clear()
+    ranked = search_documents("အကျိုးခံစားခွင့်က ဘာလဲ။", "product_a")
+
+    assert ranked
+    assert ranked[0].score >= 1.0

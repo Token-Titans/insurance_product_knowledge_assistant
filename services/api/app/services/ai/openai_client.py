@@ -27,7 +27,7 @@ async def chat_json(
     try:
         response = await client.chat.completions.create(
             model=settings.openai_model,
-            temperature=0,
+            temperature=0.2,
             response_format={"type": "json_object"},
             messages=messages,  # type: ignore[arg-type]
         )
