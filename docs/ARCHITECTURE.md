@@ -1,17 +1,28 @@
 # Architecture
 
-## Current foundation
+## Current implementation
 
 ```text
-Next.js scaffold  ── future HTTP ──>  FastAPI scaffold
-                                          │
-                                          └── GET /api/v1/health
+Next.js  ── HTTP + CORS ──>  FastAPI (/docs Swagger)
+                                  │
+                    GET  /health
+                    GET  /products
+                    GET  /products/{id}
+                    POST /assistant/ask
+                    (aliases under /api/v1)
+                                  │
+                                  ▼
+                         Approved markdown
+                         keyword retrieval (top 3)
+                                  │
+                    ┌─────────────┴─────────────┐
+                    ▼                           ▼
+              OpenAI SDK (if key)        Extractive fallback
 ```
 
-- `apps/web/`: runnable Next.js App Router scaffold with TypeScript and Tailwind.
-- `services/api/`: runnable FastAPI scaffold with explicit CORS and configuration.
-- No AI, retrieval, document processing, persistence, automation, or product endpoints are implemented.
-- No shared package is needed at this stage.
+- `apps/web/`: Next.js App Router scaffold (frontend unchanged by this backend work).
+- `services/api/`: FastAPI with health and ask. Product facts come only from `app/knowledge/approved/`.
+- Compare, n8n, persistence, and authentication are not implemented.
 
 ## Planned MVP
 
@@ -48,7 +59,7 @@ Planned responsibilities:
 - The LLM produces a grounded response from retrieved knowledge and does not replace source documents.
 - n8n may execute optional email, reminder, or sales follow-up workflows. It must not contain core product-knowledge logic.
 
-The exact model and retrieval implementation will be decided during feature development; no RAG implementation is selected by this document.
+Ask uses OpenAI when `OPENAI_API_KEY` is set (see `docs/DECISIONS.md` 008). Compare and n8n remain undecided.
 
 ## Deployment targets
 

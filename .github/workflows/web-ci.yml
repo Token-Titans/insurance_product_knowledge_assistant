@@ -5,13 +5,13 @@ on:
     branches:
       - main
     paths:
-      - "apps/web/**"
+      - "client/**"
       - ".github/workflows/web-ci.yml"
   push:
     branches:
       - main
     paths:
-      - "apps/web/**"
+      - "client/**"
       - ".github/workflows/web-ci.yml"
 
 permissions:
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/web
+        working-directory: client
     env:
       NEXT_PUBLIC_API_BASE_URL: https://13.250.105.96
     steps:
@@ -39,7 +39,7 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: client/package-lock.json
 
       - name: Install dependencies
         run: npm ci

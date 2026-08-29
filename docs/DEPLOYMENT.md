@@ -2,7 +2,7 @@
 
 ## Frontend
 
-The Next.js app deploys from `apps/web` through Vercel's Git integration.
+The Next.js app deploys from `client` through Vercel's Git integration.
 
 - Pull requests run frontend lint/build checks and receive Vercel preview deployments.
 - Every push to `main` creates a production deployment.
@@ -15,7 +15,7 @@ Vercel project settings:
 ```text
 Framework: Next.js
 Project: insureassist
-Root directory: apps/web
+Root directory: client
 Production branch: main
 ```
 

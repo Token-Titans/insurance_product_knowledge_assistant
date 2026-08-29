@@ -4,7 +4,7 @@ Commit only `.env.example` files. Create local `.env` files as needed and never 
 
 ## Web
 
-Location: `apps/web/.env.example`
+Location: `client/.env.example`
 
 ```dotenv
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
@@ -24,18 +24,18 @@ Production web URL: `https://insureassist-cyan.vercel.app`
 
 Location: `services/api/.env.example`
 
-Current foundation values:
-
 ```dotenv
 APP_ENV=development
-CORS_ORIGINS=http://localhost:3000
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
 ```
+
+`OPENAI_API_KEY` is server-side only. Leave it empty for extractive answers from approved documents. Set it locally in `.env` (never commit the file) to enable ChatGPT/OpenAI generation.
 
 Potential future server-side values, to be added only with the corresponding approved feature:
 
 ```dotenv
-OPENAI_API_KEY=
-OPENAI_MODEL=
 N8N_WEBHOOK_URL=
 ```
 
@@ -45,7 +45,11 @@ Do not add actual values to documentation or source control. AI and n8n credenti
 
 - Web: `http://localhost:3000`
 - API: `http://localhost:8000`
-- Health: `http://localhost:8000/api/v1/health`
+- Health: `http://localhost:8000/health`
+- Products: `http://localhost:8000/products`
+- Ask: `POST http://localhost:8000/assistant/ask`
+- Swagger: `http://localhost:8000/docs`
+- Compatibility prefix: `/api/v1` (same handlers)
 
 ## Production API
 
@@ -60,7 +64,7 @@ Production CORS includes `https://insureassist-cyan.vercel.app` and the local de
 ## Validation
 
 ```bash
-# apps/web
+# client
 npm install
 npm run lint
 npm run build
