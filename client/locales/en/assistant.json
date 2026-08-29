@@ -1,0 +1,59 @@
+{
+  "ask": {
+    "greeting": "What do you need to confirm?",
+    "subtitle": "Answers come from approved product documents only.",
+    "placeholder": "Ask about benefits, conditions, or exclusions…",
+    "submit": "Ask",
+    "pending": "Asking…",
+    "error_title": "Could not retrieve that answer",
+    "errors": {
+      "INVALID_REQUEST": "The question could not be sent. Check the text and try again.",
+      "UNKNOWN_PRODUCT": "That product is not in the approved set.",
+      "HTTP_ERROR": "The assistant is unavailable right now. Try again shortly.",
+      "generic": "The assistant is unavailable right now. Try again shortly."
+    },
+    "products_label": "Product",
+    "suggested_label": "Suggested questions"
+  },
+  "products": {
+    "product_a": "Product A",
+    "product_b": "Product B"
+  },
+  "suggested": {
+    "hospital": "What hospitalization benefits does Product A provide?",
+    "exclusion": "What exclusions apply to Product A hospital benefits?",
+    "unavailable": "What is the cryptocurrency wallet protection sublimit?"
+  },
+  "loading": {
+    "title": "Retrieving approved product information",
+    "step_sources": "Checking approved documents",
+    "step_match": "Matching the question to a cited section",
+    "step_cite": "Preparing source references"
+  },
+  "answered": {
+    "important_points": "Important points",
+    "conditions": "Conditions and exclusions",
+    "sources": "Sources",
+    "follow_up": "Create follow-up",
+    "follow_up_title": "Follow-up is not wired yet",
+    "follow_up_body": "This button will later post a simple webhook. It will not add product-knowledge logic.",
+    "follow_up_close": "Close"
+  },
+  "unavailable": {
+    "title": "No grounded information for that",
+    "body": "This is not covered in the approved sources I can use. I will not guess."
+  },
+  "history": {
+    "title": "This session",
+    "empty": "No questions in this session yet.",
+    "grounded": "Grounded",
+    "unavailable": "Unavailable"
+  },
+  "compare": {
+    "title": "Compare products",
+    "body": "Comparison stays a shell until the Integration Lead authorizes a stable compare contract.",
+    "column_a": "Product A",
+    "column_b": "Product B",
+    "empty": "No comparison yet."
+  }
+}

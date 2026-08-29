@@ -47,6 +47,7 @@
     --color-alert: var(--alert);
     --color-info: var(--info);
     --background-image-horizon-band: var(--gradient-horizon-band);
+    --font-myanmar: var(--font-myanmar);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -95,7 +96,7 @@
     --chart-3: #6fd8ed;
     --chart-4: #152a6b;
     --chart-5: #e15b4a;
-    --radius: 0.45rem;
+    --radius: 0.35rem;
     --sidebar: #eef3f8;
     --sidebar-foreground: #141824;
     --sidebar-primary: #1b54e0;
@@ -153,4 +154,9 @@
   html {
     @apply font-sans;
     }
+}
+
+@utility bg-seigaiha {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='80' viewBox='0 0 160 80' fill='none'%3E%3Cpath d='M0 40c20 0 20-16 40-16s20 16 40 16 20-16 40-16 20 16 40 16' stroke='%23152A6B' stroke-opacity='0.07' stroke-width='1.5'/%3E%3Cpath d='M0 64c20 0 20-16 40-16s20 16 40 16 20-16 40-16 20 16 40 16' stroke='%23152A6B' stroke-opacity='0.07' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-size: 160px 80px;
 }
