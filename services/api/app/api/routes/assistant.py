@@ -15,10 +15,10 @@ router = APIRouter(prefix="/assistant", tags=["Assistant"])
     response_model_exclude_none=True,
     summary="Ask a product-knowledge question",
     description=(
-        "Reads `knowledge/approved/{product_id}.md`, ranks the top 3 heading sections "
-        "by keyword overlap, then asks OpenAI. `source` is copied from a retrieved "
-        "section and is never invented. When `OPENAI_API_KEY` is unset, the API returns "
-        "an extractive answer from those sections."
+        "Reads `knowledge/approved/{product_id}.pdf` when present, otherwise "
+        "`{product_id}.md`. Ranks the top 3 chunks by keyword overlap, then asks OpenAI. "
+        "`source` is copied from a retrieved section (optional `page` for PDFs) and is "
+        "never invented. Unreadable PDFs fall back to markdown."
     ),
 )
 async def ask(

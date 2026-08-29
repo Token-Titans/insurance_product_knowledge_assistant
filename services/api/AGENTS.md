@@ -18,8 +18,9 @@
 
 - `GET /health`
 - `GET /products` and `GET /products/{id}`
-- `POST /assistant/ask` — grounded answers from `app/knowledge/approved/{product_id}.md`.
-  OpenAI is used when `OPENAI_API_KEY` is set; otherwise extractive retrieval.
+- `POST /assistant/ask` — grounded answers from `app/knowledge/approved/{product_id}.pdf`
+  when present, otherwise `{product_id}.md`. OpenAI is used when `OPENAI_API_KEY` is set;
+  otherwise extractive retrieval. Unreadable PDFs fall back to markdown.
 
 ## Boundaries
 
