@@ -1,138 +1,114 @@
-"""Ask orchestration: retrieve approved knowledge, then LLM or extractive answer."""
-
-import re
+"""Ask orchestration: retrieve, build prompt, call OpenAI, cite retrieved sources."""
 
 from app.core.config import Settings
-from app.core.errors import invalid_request, unknown_product
-from app.models.assistant import AskRequest, AskResponse, SourceReference
-from app.services.ai.openai_client import complete_answer
-from app.services.knowledge.corpus import KNOWN_PRODUCT_IDS, KnowledgeChunk
-from app.services.knowledge.retrieve import retrieve
+from app.core.errors import invalid_request
+from app.models.assistant import AssistantResponse, ProductSummary, SourceReference
+from app.services.ai.openai_client import chat_json
+from app.services.products import summaries_for_ids
+from app.services.retrieve import DocumentSection, search_documents
+
+SYSTEM_PROMPT = (
+    "You are an insurance product knowledge assistant. "
+    "Only answer using provided context. "
+    "If information is unavailable, say you don't know. "
+    "Never invent insurance benefits."
+)
 
 _UNAVAILABLE_ANSWER = (
-    "The approved product documents do not contain enough information to answer "
-    "this question. Use a supported product brochure, benefit table, or FAQ, or "
-    "identify the specific document section that would be required."
-)
-
-_CONDITION_HINTS = (
-    "waiting period",
-    "not covered",
-    "does not pay",
-    "exclusion",
-    "subject to",
-    "maximum",
-    "up to",
-    "pre-existing",
-    "pre-authorisation",
-    "pre-authorization",
-    "must",
-    "only after",
-    "not payable",
-    "not hospitalisation",
-    "not hospitalization",
+    "I don't know. The approved product documents do not contain enough "
+    "information to answer this question."
 )
 
 
-def _validate_product_ids(product_ids: list[str]) -> list[str]:
-    cleaned: list[str] = []
-    for raw in product_ids:
-        value = raw.strip()
-        if not value:
-            continue
-        if value not in KNOWN_PRODUCT_IDS:
-            raise unknown_product(value)
-        cleaned.append(value)
-    return cleaned
+def _sources(sections: list[DocumentSection]) -> list[SourceReference]:
+    """Build citations only from retrieved sections. Never fabricate sources."""
 
-
-def _source(chunk: KnowledgeChunk) -> SourceReference:
-    return SourceReference(document=chunk.document, section=chunk.section)
-
-
-def _condition_lines(chunks: list[KnowledgeChunk]) -> list[str]:
-    found: list[str] = []
-    seen: set[str] = set()
-    for chunk in chunks:
-        for raw_line in re.split(r"[\n.;]", chunk.text):
-            line = " ".join(raw_line.split()).strip(" -*")
-            lowered = line.lower()
-            if len(line) < 24 or lowered in seen:
-                continue
-            if any(hint in lowered for hint in _CONDITION_HINTS):
-                seen.add(lowered)
-                found.append(line)
-            if len(found) >= 4:
-                return found
-    return found
-
-
-def _important_points(chunk: KnowledgeChunk) -> list[str]:
-    points: list[str] = []
-    for raw_line in chunk.text.splitlines():
-        stripped = raw_line.strip()
-        if stripped.startswith("- "):
-            point = stripped[2:].strip()
-            if point:
-                points.append(point)
-        if len(points) >= 4:
-            break
-    if points:
-        return points
-    sentences = [
-        " ".join(part.split()).strip()
-        for part in re.split(r"(?<=[.!?])\s+", chunk.text)
-        if len(part.strip()) > 40
-    ]
-    return sentences[:3]
-
-
-def extractive_answer(question: str, chunks: list[KnowledgeChunk]) -> AskResponse:
-    """Build a source-bounded answer without calling a model."""
-
-    del question
-    if not chunks:
-        return AskResponse(
-            answer=_UNAVAILABLE_ANSWER,
-            important_points=[],
-            conditions=[
-                "Do not present this as a product fact, benefit, or exclusion."
-            ],
-            sources=[],
-            confidence="unavailable",
-        )
-
-    top = chunks[0]
-    answer = " ".join(top.text.split())
-    if len(answer) > 900:
-        answer = answer[:897].rsplit(" ", 1)[0] + "..."
     sources: list[SourceReference] = []
-    seen: set[tuple[str, str]] = set()
-    for chunk in chunks:
-        key = (chunk.document, chunk.section)
+    seen: set[tuple[str, str, str]] = set()
+    for section in sections:
+        key = (section.title, section.filename, section.section)
         if key in seen:
             continue
         seen.add(key)
-        sources.append(_source(chunk))
-    return AskResponse(
-        answer=answer,
-        important_points=_important_points(top),
-        conditions=_condition_lines(chunks),
-        sources=sources,
-        confidence="grounded",
+        sources.append(
+            SourceReference(
+                title=section.title,
+                file=section.filename,
+                section=section.section,
+            )
+        )
+    return sources
+
+
+def _products_from_sections(sections: list[DocumentSection]) -> list[ProductSummary]:
+    return summaries_for_ids([section.product_id for section in sections])
+
+
+def _context_block(sections: list[DocumentSection]) -> str:
+    if not sections:
+        return "Approved source excerpts: none were retrieved."
+    parts = ["Approved source excerpts:"]
+    for index, section in enumerate(sections, start=1):
+        parts.append(
+            f"[{index}] title={section.title!r} file={section.filename!r} "
+            f"section={section.section!r} product_id={section.product_id!r}\n"
+            f"{section.content}"
+        )
+    return "\n\n".join(parts)
+
+
+def build_prompt(question: str, sections: list[DocumentSection]) -> list[dict[str, str]]:
+    """Build the OpenAI chat messages from retrieved context."""
+
+    user_prompt = (
+        f"Question: {question}\n\n{_context_block(sections)}\n\n"
+        "Return JSON with keys: answer (string), recommended_product_ids "
+        "(array of product_id values copied from the excerpts). "
+        "If the excerpts do not support an answer, say you don't know and "
+        "use an empty recommended_product_ids array. "
+        "Do not invent sources, benefits, limits, or eligibility rules."
     )
+    return [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_prompt},
+    ]
 
 
-def ask_product_question(payload: AskRequest, settings: Settings) -> AskResponse:
-    """Retrieve approved knowledge and return a grounded or unavailable answer."""
+def _extractive_answer(sections: list[DocumentSection]) -> str:
+    if not sections:
+        return _UNAVAILABLE_ANSWER
+    text = " ".join(sections[0].content.split())
+    if len(text) > 900:
+        text = text[:897].rsplit(" ", 1)[0] + "..."
+    return text
 
-    question = payload.question.strip()
-    if not question:
+
+async def ask_product_question(question: str, settings: Settings) -> AssistantResponse:
+    """Retrieve approved sections, generate an answer, and attach real citations."""
+
+    cleaned = question.strip()
+    if not cleaned:
         raise invalid_request("question must not be empty")
 
-    product_ids = _validate_product_ids(payload.product_ids)
-    chunks = retrieve(question, product_ids)
-    model_answer = complete_answer(question, chunks, settings)
-    if model_answer is not None:
-        return model_answer
-    return extractive_answer(question, chunks)
+    sections = search_documents(cleaned)
+    generated = await chat_json(build_prompt(cleaned, sections), settings)
+    sources = _sources(sections)
+
+    if generated is None:
+        return AssistantResponse(
+            answer=_extractive_answer(sections),
+            sources=sources,
+            recommended_products=_products_from_sections(sections),
+        )
+
+    answer = str(generated.get("answer", "")).strip() or _extractive_answer(sections)
+    raw_ids = generated.get("recommended_product_ids") or []
+    recommended_ids = [
+        str(item).strip() for item in raw_ids if str(item).strip()
+    ] if isinstance(raw_ids, list) else []
+    recommended = summaries_for_ids(recommended_ids) or _products_from_sections(sections)
+    return AssistantResponse(
+        answer=answer,
+        sources=sources,
+        recommended_products=recommended,
+    )

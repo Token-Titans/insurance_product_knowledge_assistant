@@ -1,29 +1,126 @@
-"""Request and response models for the assistant ask endpoint."""
+"""Pydantic API models. Response shapes are frozen for the frontend."""
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class HealthResponse(BaseModel):
+    """Liveness payload for load balancers and the web app."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"status": "ok", "service": "insurance-assistant"}]
+        }
+    )
+
+    status: Literal["ok"] = "ok"
+    service: Literal["insurance-assistant"] = "insurance-assistant"
+
+
+class ProductSummary(BaseModel):
+    """Compact product card used in lists and assistant recommendations."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"id": "family-care", "name": "Family Care", "category": "Health"}
+            ]
+        }
+    )
+
+    id: str
+    name: str
+    category: str | None = None
+
+
+class ProductDetail(BaseModel):
+    """Product page payload derived from an approved markdown file."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "family-care",
+                    "name": "Family Care",
+                    "summary": "Hospital and outpatient cover for working adults and their families.",
+                    "benefits": [
+                        "Room and board up to RM300 per day",
+                        "Outpatient GP visits up to RM50 per visit",
+                    ],
+                }
+            ]
+        }
+    )
+
+    id: str
+    name: str
+    summary: str
+    benefits: list[str]
 
 
 class SourceReference(BaseModel):
-    """Citation a sales agent can verify in an approved document."""
+    """Citation pointing at an approved markdown section. Never fabricated."""
 
-    document: str
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "title": "Family Care Brochure",
+                    "file": "family_care.md",
+                    "section": "Eligibility",
+                }
+            ]
+        }
+    )
+
+    title: str
+    file: str
     section: str
 
 
 class AskRequest(BaseModel):
-    """Ask a product-knowledge question about approved documents."""
+    """Natural-language product-knowledge question from a sales agent."""
 
-    question: str = Field(..., min_length=1, max_length=2000)
-    product_ids: list[str] = Field(default_factory=list)
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"question": "I am 30 years old. Which insurance is suitable?"}
+            ]
+        }
+    )
+
+    question: str = Field(..., min_length=1, max_length=2000, examples=[
+        "I am 30 years old. Which insurance is suitable?"
+    ])
 
 
-class AskResponse(BaseModel):
-    """Grounded product-knowledge answer for a sales agent."""
+class AssistantResponse(BaseModel):
+    """Grounded answer with citations and optional product recommendations."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "answer": (
+                        "Family Care is suitable for a 30-year-old working adult. "
+                        "Eligibility is ages 18 to 60 at policy start."
+                    ),
+                    "sources": [
+                        {
+                            "title": "Family Care Brochure",
+                            "file": "family_care.md",
+                            "section": "Eligibility",
+                        }
+                    ],
+                    "recommended_products": [
+                        {"id": "family-care", "name": "Family Care"}
+                    ],
+                }
+            ]
+        }
+    )
 
     answer: str
-    important_points: list[str]
-    conditions: list[str]
     sources: list[SourceReference]
-    confidence: Literal["grounded", "unavailable"]
+    recommended_products: list[ProductSummary]

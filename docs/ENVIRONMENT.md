@@ -18,7 +18,7 @@ Location: `services/api/.env.example`
 
 ```dotenv
 APP_ENV=development
-CORS_ORIGINS=http://localhost:3000
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4o-mini
 ```
@@ -37,8 +37,11 @@ Do not add actual values to documentation or source control. AI and n8n credenti
 
 - Web: `http://localhost:3000`
 - API: `http://localhost:8000`
-- Health: `http://localhost:8000/api/v1/health`
-- Ask: `POST http://localhost:8000/api/v1/assistant/ask`
+- Health: `http://localhost:8000/health`
+- Products: `http://localhost:8000/products`
+- Ask: `POST http://localhost:8000/assistant/ask`
+- Swagger: `http://localhost:8000/docs`
+- Compatibility prefix: `/api/v1` (same handlers)
 
 ## Validation
 

@@ -3,18 +3,21 @@
 ## Current implementation
 
 ```text
-Next.js scaffold  ── HTTP ──>  FastAPI
+Next.js  ── HTTP + CORS ──>  FastAPI (/docs Swagger)
                                   │
-                    GET /api/v1/health
-                    POST /api/v1/assistant/ask
+                    GET  /health
+                    GET  /products
+                    GET  /products/{id}
+                    POST /assistant/ask
+                    (aliases under /api/v1)
                                   │
                                   ▼
                          Approved markdown
-                         keyword retrieval
+                         keyword retrieval (top 3)
                                   │
                     ┌─────────────┴─────────────┐
                     ▼                           ▼
-              OpenAI (if key)            Extractive fallback
+              OpenAI SDK (if key)        Extractive fallback
 ```
 
 - `apps/web/`: Next.js App Router scaffold (frontend unchanged by this backend work).

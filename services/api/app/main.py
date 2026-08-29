@@ -11,11 +11,39 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+_DESCRIPTION = """
+InsureAssist backend for insurance **sales agents**.
+
+Answers come only from approved markdown in `app/knowledge/approved/`.
+The model must not invent benefits, limits, or eligibility rules.
+
+**Frozen frontend contract**
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/health` | Liveness |
+| `GET` | `/products` | Product list |
+| `GET` | `/products/{id}` | Product detail |
+| `POST` | `/assistant/ask` | Grounded Q&A |
+
+The same routes are also mounted under `/api/v1` for the repository convention.
+"""
+
 app = FastAPI(
-    title="InsureAssist API",
-    docs_url=None,
-    redoc_url=None,
-    openapi_url=None,
+    title="Insurance Product Knowledge Assistant",
+    description=_DESCRIPTION,
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    openapi_tags=[
+        {"name": "Health", "description": "Liveness checks."},
+        {"name": "Products", "description": "Approved product catalog from markdown."},
+        {
+            "name": "Assistant",
+            "description": "Grounded product-knowledge questions with source citations.",
+        },
+    ],
 )
 app.add_middleware(
     CORSMiddleware,
@@ -24,7 +52,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(api_router, prefix="/api/v1")
+app.include_router(api_router)
+app.include_router(api_router, prefix="/api/v1", include_in_schema=False)
 
 
 @app.exception_handler(StarletteHTTPException)

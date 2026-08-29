@@ -1,4 +1,4 @@
-"""Tests for the health-check route."""
+"""Tests for GET /health."""
 
 from fastapi.testclient import TestClient
 
@@ -8,10 +8,17 @@ client = TestClient(app)
 
 
 def test_health() -> None:
-    response = client.get("/api/v1/health")
+    response = client.get("/health")
 
     assert response.status_code == 200
     assert response.json() == {
         "status": "ok",
-        "service": "insureassist-api",
+        "service": "insurance-assistant",
     }
+
+
+def test_health_v1_alias() -> None:
+    response = client.get("/api/v1/health")
+
+    assert response.status_code == 200
+    assert response.json()["service"] == "insurance-assistant"

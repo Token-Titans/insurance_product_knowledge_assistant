@@ -4,9 +4,11 @@ from fastapi import APIRouter
 
 from app.api.routes.assistant import router as assistant_router
 from app.api.routes.health import router as health_router
+from app.api.routes.products import router as products_router
 
 api_router = APIRouter()
 api_router.include_router(health_router)
+api_router.include_router(products_router)
 api_router.include_router(assistant_router)
 
 __all__ = ["api_router"]
