@@ -15,9 +15,10 @@ router = APIRouter(prefix="/assistant", tags=["Assistant"])
     response_model_exclude_none=True,
     summary="Ask a product-knowledge question",
     description=(
-        "Retrieves the top matching approved markdown sections, then generates a grounded "
-        "answer. Citations always come from retrieved files. When `OPENAI_API_KEY` is "
-        "unset, the API returns an extractive answer from those sections."
+        "Reads `knowledge/approved/{product_id}.md`, ranks the top 3 heading sections "
+        "by keyword overlap, then asks OpenAI. `source` is copied from a retrieved "
+        "section and is never invented. When `OPENAI_API_KEY` is unset, the API returns "
+        "an extractive answer from those sections."
     ),
 )
 async def ask(
@@ -26,4 +27,4 @@ async def ask(
 ) -> AssistantResponse:
     """Answer a sales-agent product question from approved documents."""
 
-    return await ask_product_question(payload.question, settings)
+    return await ask_product_question(payload.product_id, payload.question, settings)

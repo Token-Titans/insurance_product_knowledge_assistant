@@ -19,12 +19,12 @@ class HealthResponse(BaseModel):
 
 
 class ProductSummary(BaseModel):
-    """Compact product card used in lists and assistant recommendations."""
+    """Compact product card for GET /products."""
 
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
-                {"id": "family-care", "name": "Family Care", "category": "Health"}
+                {"id": "product_a", "name": "Product A", "category": "Health"}
             ]
         }
     )
@@ -41,13 +41,10 @@ class ProductDetail(BaseModel):
         json_schema_extra={
             "examples": [
                 {
-                    "id": "family-care",
-                    "name": "Family Care",
-                    "summary": "Hospital and outpatient cover for working adults and their families.",
-                    "benefits": [
-                        "Room and board up to RM300 per day",
-                        "Outpatient GP visits up to RM50 per visit",
-                    ],
+                    "id": "product_a",
+                    "name": "Product A",
+                    "summary": "Hospitalisation plan for working adults.",
+                    "benefits": ["Room and board up to RM300 per day"],
                 }
             ]
         }
@@ -60,67 +57,80 @@ class ProductDetail(BaseModel):
 
 
 class SourceReference(BaseModel):
-    """Citation pointing at an approved markdown section. Never fabricated."""
+    """Single citation copied from a retrieved markdown section. Never fabricated."""
 
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
                 {
-                    "title": "Family Care Brochure",
-                    "file": "family_care.md",
-                    "section": "Eligibility",
+                    "document": "Product A Brochure",
+                    "file": "product_a.md",
+                    "section": "Hospitalization Benefits",
                 }
             ]
         }
     )
 
-    title: str
-    file: str
-    section: str
+    document: str = ""
+    file: str = ""
+    section: str = ""
 
 
 class AskRequest(BaseModel):
-    """Natural-language product-knowledge question from a sales agent."""
+    """Ask a question about one approved product."""
 
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
-                {"question": "I am 30 years old. Which insurance is suitable?"}
+                {
+                    "product_id": "product_a",
+                    "question": "What is the hospitalization benefit?",
+                }
             ]
         }
     )
 
-    question: str = Field(..., min_length=1, max_length=2000, examples=[
-        "I am 30 years old. Which insurance is suitable?"
-    ])
+    product_id: str = Field(..., min_length=1, max_length=64, examples=["product_a"])
+    question: str = Field(
+        ...,
+        min_length=1,
+        max_length=2000,
+        examples=["What is the hospitalization benefit?"],
+    )
 
 
 class AssistantResponse(BaseModel):
-    """Grounded answer with citations and optional product recommendations."""
+    """Grounded product answer with conditions, exclusions, and one source."""
 
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
                 {
                     "answer": (
-                        "Family Care is suitable for a 30-year-old working adult. "
-                        "Eligibility is ages 18 to 60 at policy start."
+                        "Product A pays room and board up to RM300 per day, ICU up to "
+                        "RM600 per day, and hospital miscellaneous charges up to RM15,000 per admission."
                     ),
-                    "sources": [
-                        {
-                            "title": "Family Care Brochure",
-                            "file": "family_care.md",
-                            "section": "Eligibility",
-                        }
+                    "important_conditions": [
+                        "30-day waiting period except accidents.",
+                        "Pre-authorisation required for planned admissions.",
                     ],
-                    "recommended_products": [
-                        {"id": "family-care", "name": "Family Care"}
+                    "exclusions": [
+                        "Undisclosed pre-existing conditions are not covered.",
+                        "Cosmetic procedures are not covered.",
                     ],
+                    "source": {
+                        "document": "Product A Brochure",
+                        "file": "product_a.md",
+                        "section": "Hospitalization Benefits",
+                    },
+                    "confidence": 0.82,
                 }
             ]
         }
     )
 
     answer: str
-    sources: list[SourceReference]
-    recommended_products: list[ProductSummary]
+    important_conditions: list[str]
+    exclusions: list[str]
+    source: SourceReference
+    confidence: float = Field(..., ge=0.0, le=1.0)

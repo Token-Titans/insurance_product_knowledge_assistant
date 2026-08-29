@@ -15,7 +15,7 @@ def _first_sections_by_product() -> dict[str, list[DocumentSection]]:
 def _benefits_from(sections: list[DocumentSection]) -> list[str]:
     benefits: list[str] = []
     for section in sections:
-        if section.section.lower() != "benefits":
+        if "benefit" not in section.section.lower():
             continue
         for line in section.content.splitlines():
             stripped = line.strip()
@@ -63,18 +63,3 @@ def get_product(product_id: str) -> ProductDetail:
         summary=summary,
         benefits=_benefits_from(sections),
     )
-
-
-def summaries_for_ids(product_ids: list[str]) -> list[ProductSummary]:
-    """Map known ids to summaries, skipping anything not in the corpus."""
-
-    catalog = {item.id: item for item in list_products()}
-    results: list[ProductSummary] = []
-    seen: set[str] = set()
-    for product_id in product_ids:
-        item = catalog.get(product_id)
-        if item is None or item.id in seen:
-            continue
-        seen.add(item.id)
-        results.append(ProductSummary(id=item.id, name=item.name))
-    return results

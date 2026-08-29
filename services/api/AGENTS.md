@@ -18,7 +18,7 @@
 
 - `GET /health`
 - `GET /products` and `GET /products/{id}`
-- `POST /assistant/ask` — grounded answers from `app/knowledge/approved/`.
+- `POST /assistant/ask` — grounded answers from `app/knowledge/approved/{product_id}.md`.
   OpenAI is used when `OPENAI_API_KEY` is set; otherwise extractive retrieval.
 
 ## Boundaries

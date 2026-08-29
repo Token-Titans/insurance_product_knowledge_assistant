@@ -1,11 +1,12 @@
-"""Ask orchestration: retrieve, build prompt, call OpenAI, cite retrieved sources."""
+"""Ask orchestration: retrieve one product file, then OpenAI or extractive fallback."""
+
+import re
 
 from app.core.config import Settings
 from app.core.errors import invalid_request
-from app.models.assistant import AssistantResponse, ProductSummary, SourceReference
+from app.models.assistant import AssistantResponse, SourceReference
 from app.services.ai.openai_client import chat_json
-from app.services.products import summaries_for_ids
-from app.services.retrieve import DocumentSection, search_documents
+from app.services.retrieve import DocumentSection, RankedSection, search_documents
 
 SYSTEM_PROMPT = (
     "You are an insurance product knowledge assistant. "
@@ -19,29 +20,70 @@ _UNAVAILABLE_ANSWER = (
     "information to answer this question."
 )
 
+_CONDITION_HINTS = (
+    "waiting period",
+    "pre-authorisation",
+    "pre-authorization",
+    "subject to",
+    "must",
+    "only after",
+    "not payable",
+    "annual aggregate",
+)
+_EXCLUSION_HINTS = (
+    "does not pay",
+    "not covered",
+    "exclusion",
+    "not pay for",
+)
 
-def _sources(sections: list[DocumentSection]) -> list[SourceReference]:
-    """Build citations only from retrieved sections. Never fabricate sources."""
 
-    sources: list[SourceReference] = []
-    seen: set[tuple[str, str, str]] = set()
+def _empty_source() -> SourceReference:
+    return SourceReference(document="", file="", section="")
+
+
+def _source_from(section: DocumentSection) -> SourceReference:
+    """Copy citation fields from a retrieved section only."""
+
+    return SourceReference(
+        document=section.document,
+        file=section.filename,
+        section=section.section,
+    )
+
+
+def _confidence(ranked: list[RankedSection]) -> float:
+    """Map the top keyword score onto a 0.0–1.0 range."""
+
+    if not ranked:
+        return 0.0
+    return round(min(1.0, ranked[0].score / 10.0), 2)
+
+
+def _bullet_or_sentence_lines(text: str) -> list[str]:
+    lines: list[str] = []
+    for raw in re.split(r"[\n;]", text):
+        item = " ".join(raw.split()).strip(" -*")
+        if len(item) >= 24:
+            lines.append(item)
+    return lines
+
+
+def _extract_labeled(sections: list[DocumentSection], heading: str, hints: tuple[str, ...]) -> list[str]:
+    found: list[str] = []
+    seen: set[str] = set()
     for section in sections:
-        key = (section.title, section.filename, section.section)
-        if key in seen:
-            continue
-        seen.add(key)
-        sources.append(
-            SourceReference(
-                title=section.title,
-                file=section.filename,
-                section=section.section,
-            )
-        )
-    return sources
-
-
-def _products_from_sections(sections: list[DocumentSection]) -> list[ProductSummary]:
-    return summaries_for_ids([section.product_id for section in sections])
+        relevant = heading in section.section.lower()
+        for line in _bullet_or_sentence_lines(section.content):
+            lowered = line.lower()
+            if lowered in seen:
+                continue
+            if relevant or any(hint in lowered for hint in hints):
+                seen.add(lowered)
+                found.append(line)
+            if len(found) >= 5:
+                return found
+    return found
 
 
 def _context_block(sections: list[DocumentSection]) -> str:
@@ -50,23 +92,22 @@ def _context_block(sections: list[DocumentSection]) -> str:
     parts = ["Approved source excerpts:"]
     for index, section in enumerate(sections, start=1):
         parts.append(
-            f"[{index}] title={section.title!r} file={section.filename!r} "
-            f"section={section.section!r} product_id={section.product_id!r}\n"
-            f"{section.content}"
+            f"[{index}] document={section.document!r} file={section.filename!r} "
+            f"section={section.section!r}\n{section.content}"
         )
     return "\n\n".join(parts)
 
 
 def build_prompt(question: str, sections: list[DocumentSection]) -> list[dict[str, str]]:
-    """Build the OpenAI chat messages from retrieved context."""
+    """Build OpenAI chat messages from the top retrieved sections."""
 
     user_prompt = (
         f"Question: {question}\n\n{_context_block(sections)}\n\n"
-        "Return JSON with keys: answer (string), recommended_product_ids "
-        "(array of product_id values copied from the excerpts). "
-        "If the excerpts do not support an answer, say you don't know and "
-        "use an empty recommended_product_ids array. "
-        "Do not invent sources, benefits, limits, or eligibility rules."
+        "Return JSON with keys: answer (string), important_conditions (array of strings), "
+        "exclusions (array of strings). "
+        "Copy conditions and exclusions only from the excerpts. "
+        "If the excerpts do not support an answer, say you don't know and use empty arrays. "
+        "Do not invent benefits, limits, waiting periods, or exclusions."
     )
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -83,32 +124,49 @@ def _extractive_answer(sections: list[DocumentSection]) -> str:
     return text
 
 
-async def ask_product_question(question: str, settings: Settings) -> AssistantResponse:
-    """Retrieve approved sections, generate an answer, and attach real citations."""
+def _string_list(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
 
-    cleaned = question.strip()
-    if not cleaned:
+
+async def ask_product_question(
+    product_id: str,
+    question: str,
+    settings: Settings,
+) -> AssistantResponse:
+    """Retrieve one product file, generate an answer, and attach a real citation."""
+
+    cleaned_product = product_id.strip()
+    cleaned_question = question.strip()
+    if not cleaned_product:
+        raise invalid_request("product_id must not be empty")
+    if not cleaned_question:
         raise invalid_request("question must not be empty")
 
-    sections = search_documents(cleaned)
-    generated = await chat_json(build_prompt(cleaned, sections), settings)
-    sources = _sources(sections)
+    ranked = search_documents(cleaned_question, cleaned_product)
+    sections = [item.section for item in ranked]
+    generated = await chat_json(build_prompt(cleaned_question, sections), settings)
+
+    source = _source_from(sections[0]) if sections else _empty_source()
+    fallback_conditions = _extract_labeled(sections, "condition", _CONDITION_HINTS)
+    fallback_exclusions = _extract_labeled(sections, "exclusion", _EXCLUSION_HINTS)
 
     if generated is None:
         return AssistantResponse(
             answer=_extractive_answer(sections),
-            sources=sources,
-            recommended_products=_products_from_sections(sections),
+            important_conditions=fallback_conditions,
+            exclusions=fallback_exclusions,
+            source=source,
+            confidence=_confidence(ranked),
         )
 
     answer = str(generated.get("answer", "")).strip() or _extractive_answer(sections)
-    raw_ids = generated.get("recommended_product_ids") or []
-    recommended_ids = [
-        str(item).strip() for item in raw_ids if str(item).strip()
-    ] if isinstance(raw_ids, list) else []
-    recommended = summaries_for_ids(recommended_ids) or _products_from_sections(sections)
     return AssistantResponse(
         answer=answer,
-        sources=sources,
-        recommended_products=recommended,
+        important_conditions=_string_list(generated.get("important_conditions"))
+        or fallback_conditions,
+        exclusions=_string_list(generated.get("exclusions")) or fallback_exclusions,
+        source=source,
+        confidence=_confidence(ranked),
     )

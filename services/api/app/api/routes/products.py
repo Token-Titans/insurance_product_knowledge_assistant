@@ -24,7 +24,7 @@ async def products() -> list[ProductSummary]:
     "/{id}",
     response_model=ProductDetail,
     summary="Get one approved product",
-    description="Returns summary and benefit bullets for a single product id such as `family-care`.",
+    description="Returns summary and benefit bullets for a single product id such as `product_a`.",
     responses={
         404: {
             "description": "Unknown product id",
