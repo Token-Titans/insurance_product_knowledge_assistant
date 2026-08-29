@@ -1,0 +1,13 @@
+{
+  "app": {
+    "name": "InsureAssist",
+    "tagline": "Live Life Beyond Horizon",
+    "history": "History",
+    "compare": "Compare",
+    "ask": "Ask"
+  },
+  "locale": {
+    "en": "EN",
+    "my": "MY"
+  }
+}
