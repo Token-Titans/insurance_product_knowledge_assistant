@@ -10,6 +10,7 @@ Next.js  ── HTTP + CORS ──>  FastAPI (/docs Swagger)
                     GET  /products/{id}
                     GET  /products/{id}/suggested-questions
                     POST /assistant/ask
+                    POST /assistant/compare
                     (aliases under /api/v1)
                                   │
                                   ▼
@@ -23,7 +24,7 @@ Next.js  ── HTTP + CORS ──>  FastAPI (/docs Swagger)
 
 - `apps/web/`: Next.js App Router scaffold (frontend unchanged by this backend work).
 - `services/api/`: FastAPI with health and ask. Product facts come only from `app/knowledge/approved/`.
-- Compare, n8n, persistence, and authentication are not implemented.
+- Persistence and authentication are not implemented.
 
 ## Planned MVP
 
@@ -60,7 +61,7 @@ Planned responsibilities:
 - The LLM produces a grounded response from retrieved knowledge and does not replace source documents.
 - n8n may execute optional email, reminder, or sales follow-up workflows. It must not contain core product-knowledge logic.
 
-Ask uses OpenAI when `OPENAI_API_KEY` is set (see `docs/DECISIONS.md` 008). Compare and n8n remain undecided.
+Ask uses OpenAI when `OPENAI_API_KEY` is set (see `docs/DECISIONS.md` 008). Compare runs two independent grounded asks. n8n owns follow-up reminders only.
 
 ## Deployment targets
 

@@ -1,10 +1,11 @@
 """Ask orchestration: retrieve one product file, then OpenAI or extractive fallback."""
 
+import asyncio
 import re
 
 from app.core.config import Settings
 from app.core.errors import invalid_request
-from app.models.assistant import AssistantResponse, SourceReference
+from app.models.assistant import AssistantResponse, CompareResponse, SourceReference
 from app.services.ai.openai_client import chat_json
 from app.services.retrieve import DocumentSection, RankedSection, search_documents
 
@@ -264,3 +265,23 @@ async def ask_product_question(
         source=source,
         confidence=_confidence(ranked),
     )
+
+
+async def compare_products(
+    left_product_id: str,
+    right_product_id: str,
+    question: str,
+    settings: Settings,
+) -> CompareResponse:
+    """Answer the same question from two approved products, independently."""
+
+    left_id = left_product_id.strip()
+    right_id = right_product_id.strip()
+    if left_id == right_id:
+        raise invalid_request("left_product_id and right_product_id must be different")
+
+    left, right = await asyncio.gather(
+        ask_product_question(left_id, question, settings),
+        ask_product_question(right_id, question, settings),
+    )
+    return CompareResponse(left=left, right=right)

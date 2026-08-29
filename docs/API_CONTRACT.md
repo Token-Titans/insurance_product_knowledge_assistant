@@ -168,11 +168,56 @@ Swagger UI: `http://localhost:8000/docs`
 
 ## Compare Products
 
-`POST /api/v1/assistant/compare`
+`POST /assistant/compare`
 
-**Status: PLANNED / SHOULD HAVE**
+**Status: IMPLEMENTED**
 
-The request and response schema will be agreed before implementation. Do not implement this endpoint from assumptions.
+Request matches the frontend compare composer:
+
+```json
+{
+  "question": "What are the key benefits, conditions, and exclusions?",
+  "left_product_id": "dai_ichi_life_pro",
+  "right_product_id": "dai_ichi_guard"
+}
+```
+
+- `question` is required (1–2000 characters).
+- `left_product_id` and `right_product_id` are required, must be different, and must match approved product files.
+- The same handlers are served under `/api/v1/assistant/compare`.
+
+Response:
+
+```json
+{
+  "left": {
+    "answer": "",
+    "important_conditions": [],
+    "exclusions": [],
+    "source": {
+      "document": "",
+      "file": "",
+      "section": "",
+      "page": null
+    },
+    "confidence": 0.0
+  },
+  "right": {
+    "answer": "",
+    "important_conditions": [],
+    "exclusions": [],
+    "source": {
+      "document": "",
+      "file": "",
+      "section": "",
+      "page": null
+    },
+    "confidence": 0.0
+  }
+}
+```
+
+Each column is a grounded `POST /assistant/ask` result for that product only. Sources are never mixed. Identical product ids return HTTP 422 `INVALID_REQUEST`. Unknown ids return HTTP 404 `PRODUCT_NOT_FOUND`.
 
 ## Standard error
 

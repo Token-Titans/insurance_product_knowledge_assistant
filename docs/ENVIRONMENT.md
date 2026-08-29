@@ -46,6 +46,7 @@ Do not add actual values to documentation or source control. AI and n8n credenti
 - Products: `http://localhost:8000/products`
 - Suggested questions: `http://localhost:8000/products/{id}/suggested-questions`
 - Ask: `POST http://localhost:8000/assistant/ask`
+- Compare: `POST http://localhost:8000/assistant/compare`
 - Follow-up: `POST http://localhost:8000/assistant/follow-up`
 - Swagger: `http://localhost:8000/docs`
 - Compatibility prefix: `/api/v1` (same handlers)

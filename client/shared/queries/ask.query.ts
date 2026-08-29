@@ -3,8 +3,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { compareRequestSchema } from "@/features/assistant/schemas/ask.schema";
-import { isApiError } from "@/shared/types/api-error";
-import { askProductQuestion } from "@/shared/services/ask.service";
+import { isApiError, isCanceledError } from "@/shared/types/api-error";
+import {
+  askProductQuestion,
+  compareProducts,
+} from "@/shared/services/ask.service";
 
 import type {
   AskRequest,
@@ -48,35 +51,36 @@ export function useAskProductQuestion() {
 }
 
 export function useCompareProducts() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationKey: [...assistantKeys.all, "compare"],
     mutationFn: async (request: CompareRequest) => {
       const body = compareRequestSchema.parse(request);
 
-      const run = (productId: string) =>
-        queryClient.fetchQuery({
-          queryKey: assistantKeys.ask(body.question, productId),
-          queryFn: ({ signal }) =>
-            askProductQuestion(
-              { product_id: productId, question: body.question },
-              signal,
-            ),
-          staleTime: 2 * 60_000,
-          gcTime: 10 * 60_000,
-          retry: shouldRetryAsk,
-        });
+      try {
+        const data = await compareProducts(body);
 
-      const [left, right] = await Promise.allSettled([
-        run(body.left_product_id),
-        run(body.right_product_id),
-      ]);
+        return {
+          left: { status: "fulfilled" as const, value: data.left },
+          right: { status: "fulfilled" as const, value: data.right },
+        };
+      } catch (error) {
+        if (isCanceledError(error)) {
+          throw error;
+        }
 
-      return { left, right } as {
-        left: PromiseSettledResult<AskResponse>;
-        right: PromiseSettledResult<AskResponse>;
-      };
+        const rejected = {
+          status: "rejected" as const,
+          reason: error,
+        };
+
+        return {
+          left: rejected,
+          right: rejected,
+        } as {
+          left: PromiseSettledResult<AskResponse>;
+          right: PromiseSettledResult<AskResponse>;
+        };
+      }
     },
   });
 }
