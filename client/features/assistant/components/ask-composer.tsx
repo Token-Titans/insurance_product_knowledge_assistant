@@ -37,6 +37,8 @@ export function AskComposer({
   });
 
   const productId = form.watch("product_id");
+  const questionField = form.register("question");
+  const canSubmit = !isPending && Boolean(productId);
 
   useEffect(() => {
     if (productId || products.length === 0) {
@@ -46,24 +48,44 @@ export function AskComposer({
     form.setValue("product_id", products[0].id, { shouldValidate: true });
   }, [form, productId, products]);
 
+  function submitAsk(values: AskRequest) {
+    onSubmitAsk(values);
+    form.reset({
+      question: "",
+      product_id: values.product_id,
+    });
+  }
+
   return (
     <form
       className="space-y-4"
       aria-busy={isPending}
-      onSubmit={form.handleSubmit((values) => {
-        onSubmitAsk(values);
-        form.reset({
-          question: "",
-          product_id: values.product_id,
-        });
-      })}
+      onSubmit={form.handleSubmit(submitAsk)}
     >
       <div className="rounded-2xl bg-card p-3 ring-1 ring-border">
         <Textarea
           rows={3}
+          enterKeyHint="send"
           placeholder={t("ask.placeholder")}
           className="min-h-20 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
-          {...form.register("question")}
+          {...questionField}
+          onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing || event.keyCode === 229) {
+              return;
+            }
+
+            if (event.key !== "Enter" || event.shiftKey) {
+              return;
+            }
+
+            event.preventDefault();
+
+            if (!canSubmit) {
+              return;
+            }
+
+            void form.handleSubmit(submitAsk)();
+          }}
         />
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <ProductPicker
@@ -73,14 +95,19 @@ export function AskComposer({
               form.setValue("product_id", nextId, { shouldValidate: true });
             }}
           />
-          <Button type="submit" disabled={isPending || !productId}>
-            {isPending ? t("ask.pending") : t("ask.submit")}
-            {isPending ? (
-              <LoaderCircle className="animate-spin" data-icon="inline-end" />
-            ) : (
-              <ArrowUp data-icon="inline-end" />
-            )}
-          </Button>
+          <div className="flex items-center gap-3">
+            <p className="hidden text-xs text-muted-foreground sm:block">
+              {t("ask.enter_hint")}
+            </p>
+            <Button type="submit" disabled={!canSubmit}>
+              {isPending ? t("ask.pending") : t("ask.submit")}
+              {isPending ? (
+                <LoaderCircle className="animate-spin" data-icon="inline-end" />
+              ) : (
+                <ArrowUp data-icon="inline-end" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
       {showSuggestions ? (

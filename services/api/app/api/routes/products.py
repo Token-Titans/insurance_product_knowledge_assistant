@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter
 
-from app.models.assistant import ProductDetail, ProductSummary
-from app.services.products import get_product, list_products
+from app.models.assistant import ProductDetail, ProductSummary, SuggestedQuestion
+from app.services.products import get_product, list_products, list_suggested_questions
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -18,6 +18,36 @@ async def products() -> list[ProductSummary]:
     """List products discovered in the approved corpus."""
 
     return list_products()
+
+
+@router.get(
+    "/{id}/suggested-questions",
+    response_model=list[SuggestedQuestion],
+    summary="List suggested sales questions",
+    description=(
+        "Returns grounded prompt cards for one product. Each question maps to a "
+        "heading that exists in the approved markdown file, such as Benefits or Exclusions."
+    ),
+    responses={
+        404: {
+            "description": "Unknown product id",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": {
+                            "code": "PRODUCT_NOT_FOUND",
+                            "message": "Unknown product 'missing-id'.",
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def suggested_questions(id: str) -> list[SuggestedQuestion]:
+    """Return suggested questions for one approved product."""
+
+    return list_suggested_questions(id)
 
 
 @router.get(

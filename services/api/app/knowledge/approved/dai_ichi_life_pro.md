@@ -1,5 +1,5 @@
 ---
-id: dai-ichi-life-pro
+id: dai_ichi_life_pro
 name: Dai-ichi Life Pro
 category: Life & Savings
 title: Dai-ichi Life Pro Product Guide
