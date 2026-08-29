@@ -60,7 +60,7 @@ function CompareColumn({
     column.response != null && isGroundedResponse(column.response.confidence);
 
   return (
-    <section className="flex min-w-0 flex-col gap-3 p-4">
+    <section className="flex h-full min-w-0 flex-col gap-3 p-4">
       <h3 className="font-heading text-sm font-medium">{name}</h3>
       {column.status === "error" && column.errorCode ? (
         <AskErrorBanner code={column.errorCode} />
@@ -81,15 +81,17 @@ function CompareColumn({
               ...column.response.exclusions,
             ]}
           />
-          <SourceBadges source={column.response.source} />
           {!isGrounded && !column.response.answer.trim() ? (
             <p className="text-xs text-muted-foreground">
               {t("unavailable.body")}
             </p>
           ) : null}
-          {isGrounded && column.status === "answered" ? (
-            <FollowUpButton productId={column.productId} />
-          ) : null}
+          <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+            <SourceBadges source={column.response.source} />
+            {isGrounded && column.status === "answered" ? (
+              <FollowUpButton productId={column.productId} />
+            ) : null}
+          </div>
         </>
       ) : null}
     </section>
@@ -122,16 +124,18 @@ export function ComparePanel({ turn }: ComparePanelProps) {
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">{t("compare.result_hint")}</p>
       <div className="grid overflow-hidden rounded-2xl bg-card ring-1 ring-border sm:grid-cols-2">
-        <div className="border-b border-border sm:border-r sm:border-b-0">
+        <div className="min-w-0 border-b border-border sm:border-r sm:border-b-0">
           <CompareColumn
             column={turn.left}
             name={productLabel(products, turn.left.productId)}
           />
         </div>
-        <CompareColumn
-          column={turn.right}
-          name={productLabel(products, turn.right.productId)}
-        />
+        <div className="min-w-0">
+          <CompareColumn
+            column={turn.right}
+            name={productLabel(products, turn.right.productId)}
+          />
+        </div>
       </div>
     </div>
   );
