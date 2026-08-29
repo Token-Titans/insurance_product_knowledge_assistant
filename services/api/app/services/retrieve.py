@@ -181,14 +181,16 @@ def _score(question_tokens: set[str], section: RetrievedSection) -> float:
     return float(len(overlap)) + heading_boost
 
 
-def _from_markdown(chunk: MarkdownSection) -> RetrievedSection:
+def _from_markdown(
+    chunk: MarkdownSection, product_id: str | None = None
+) -> RetrievedSection:
     return RetrievedSection(
         text=chunk.content,
         title=chunk.document,
         file=chunk.filename,
         section=chunk.section,
         page=None,
-        product_id=chunk.product_id,
+        product_id=product_id or chunk.product_id,
         product_name=chunk.product_name,
         category=chunk.category,
         summary=chunk.summary,
@@ -213,17 +215,24 @@ def _from_pdf_page(page: PdfPage, product_id: str) -> RetrievedSection:
 def _sections_for_product(product_id: str) -> list[RetrievedSection]:
     """Prefer a readable PDF; otherwise use markdown. Empty if PDF parse fails and no MD."""
 
+    requested_id = _safe_stem(product_id)
     pdf_path = _approved_file(product_id, ".pdf")
     md_path = _approved_file(product_id, ".md")
     if pdf_path is not None:
         pages = load_pdf_pages(pdf_path)
         if pages:
-            return [_from_pdf_page(page, _safe_stem(product_id)) for page in pages]
+            return [_from_pdf_page(page, requested_id) for page in pages]
         if md_path is not None:
-            return [_from_markdown(chunk) for chunk in load_markdown_file(md_path)]
+            return [
+                _from_markdown(chunk, requested_id)
+                for chunk in load_markdown_file(md_path)
+            ]
         return []
     if md_path is not None:
-        return [_from_markdown(chunk) for chunk in load_markdown_file(md_path)]
+        return [
+            _from_markdown(chunk, requested_id)
+            for chunk in load_markdown_file(md_path)
+        ]
     raise product_not_found(product_id)
 
 
