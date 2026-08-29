@@ -25,6 +25,7 @@ The model must not invent benefits, limits, or eligibility rules.
 | `GET` | `/products` | Product list |
 | `GET` | `/products/{id}` | Product detail |
 | `POST` | `/assistant/ask` | Grounded Q&A |
+| `POST` | `/assistant/follow-up` | Schedule n8n reminder |
 
 The same routes are also mounted under `/api/v1` for the repository convention.
 """

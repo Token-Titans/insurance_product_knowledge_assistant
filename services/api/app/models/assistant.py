@@ -1,5 +1,6 @@
 """Pydantic API models. Response shapes are frozen for the frontend."""
 
+from datetime import date
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -137,3 +138,34 @@ class AssistantResponse(BaseModel):
     exclusions: list[str]
     source: SourceReference
     confidence: float = Field(..., ge=0.0, le=1.0)
+
+
+class FollowUpRequest(BaseModel):
+    """Schedule a sales follow-up reminder through n8n."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "customer_name": "Aung Aung",
+                    "product_id": "dai-ichi-life-pro",
+                    "follow_up_date": "2026-09-05",
+                    "note": "Call back about the Life Pro living benefit.",
+                }
+            ]
+        }
+    )
+
+    customer_name: str = Field(..., min_length=1, max_length=120)
+    product_id: str = Field(..., min_length=1, max_length=64)
+    follow_up_date: date = Field(..., examples=["2026-09-05"])
+    note: str = Field(..., min_length=1, max_length=2000)
+
+
+class FollowUpResponse(BaseModel):
+    """n8n accepted the reminder. Waiting and email happen in n8n."""
+
+    status: Literal["scheduled"] = "scheduled"
+    customer_name: str
+    product: str
+    follow_up_date: date
