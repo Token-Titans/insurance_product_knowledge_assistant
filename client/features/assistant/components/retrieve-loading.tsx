@@ -15,10 +15,10 @@ export function RetrieveLoading() {
   const { t } = useTranslation("assistant");
 
   return (
-    <section className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-foreground/10">
+    <section className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border">
       <div>
         <p className="font-heading text-base font-medium">{t("loading.title")}</p>
-        <div className="mt-4 h-1 overflow-hidden rounded-full bg-mist">
+        <div className="mt-4 h-1 overflow-hidden rounded-full bg-muted">
           <div className="h-full w-2/3 animate-pulse bg-horizon-band" />
         </div>
       </div>

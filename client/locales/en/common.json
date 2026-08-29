@@ -4,9 +4,11 @@
     "tagline": "Live Life Beyond Horizon",
     "history": "History",
     "compare": "Compare",
-    "ask": "Ask"
+    "ask": "Ask",
+    "nav_label": "Primary"
   },
   "locale": {
+    "label": "Language",
     "en": "EN",
     "my": "MY"
   }
