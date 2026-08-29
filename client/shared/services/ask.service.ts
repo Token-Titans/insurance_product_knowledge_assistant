@@ -13,12 +13,7 @@ export async function askProductQuestion(
   payload: AskRequest,
   signal?: AbortSignal,
 ): Promise<AskResponse> {
-  const parsed = askRequestSchema.parse(payload);
-  const body =
-    parsed.product_ids && parsed.product_ids.length > 0
-      ? parsed
-      : { question: parsed.question };
-
+  const body = askRequestSchema.parse(payload);
   const response = await api.post<unknown>("/assistant/ask", body, { signal });
 
   return askResponseSchema.parse(response.data);

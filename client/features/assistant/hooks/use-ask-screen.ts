@@ -6,97 +6,77 @@ import { useAskProductQuestion } from "@/shared/queries/ask.query";
 import { isApiError, isCanceledError } from "@/shared/types/api-error";
 
 import type { AskRequest, AskResponse } from "@/features/assistant/types/ask.types";
-import type {
-  AskHistoryItem,
-  AskOutcome,
-  AskScreenResult,
-  AskViewState,
-} from "@/features/assistant/types/ask-screen.types";
+import type { ChatTurn } from "@/features/assistant/types/ask-screen.types";
 
-function createHistoryId() {
+function createTurnId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function outcomeFromResponse(response: AskResponse): AskOutcome {
+function statusFromResponse(response: AskResponse): ChatTurn["status"] {
   return response.confidence === "grounded" ? "answered" : "unavailable";
 }
 
 export function useAskScreen() {
   const askMutation = useAskProductQuestion();
-  const [viewState, setViewState] = useState<AskViewState>("idle");
-  const [result, setResult] = useState<AskScreenResult | null>(null);
-  const [history, setHistory] = useState<AskHistoryItem[]>([]);
-  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [turns, setTurns] = useState<ChatTurn[]>([]);
 
   const isPending = askMutation.isPending;
-  const isLoading = isPending && result === null;
+  const isEmpty = turns.length === 0;
 
   async function submitAsk(request: AskRequest) {
-    const productIds = request.product_ids ?? [];
-    const isRepeat =
-      result !== null &&
-      result.question === request.question &&
-      result.productIds.join() === productIds.join();
+    const id = createTurnId();
 
-    setErrorCode(null);
-    setViewState(isRepeat ? "pending" : "loading");
-
-    if (!isRepeat) {
-      setResult(null);
-    }
+    setTurns((items) => [
+      ...items,
+      {
+        id,
+        question: request.question,
+        productId: request.product_id,
+        status: "pending",
+        response: null,
+        errorCode: null,
+      },
+    ]);
 
     try {
       const response = await askMutation.mutateAsync(request);
-      const outcome = outcomeFromResponse(response);
-      const nextResult: AskScreenResult = {
-        question: request.question,
-        productIds,
-        outcome,
-        response,
-      };
 
-      setResult(nextResult);
-      setViewState(outcome);
-      setHistory((items) => [
-        {
-          id: createHistoryId(),
-          question: request.question,
-          productIds,
-          outcome,
-          response,
-        },
-        ...items,
-      ]);
+      setTurns((items) =>
+        items.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                status: statusFromResponse(response),
+                response,
+                errorCode: null,
+              }
+            : item,
+        ),
+      );
     } catch (error) {
       if (isCanceledError(error)) {
+        setTurns((items) => items.filter((item) => item.id !== id));
         return;
       }
 
-      setErrorCode(isApiError(error) ? error.code : "HTTP_ERROR");
-      setViewState(isRepeat && result ? result.outcome : "idle");
+      setTurns((items) =>
+        items.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                status: "error",
+                errorCode: isApiError(error) ? error.code : "HTTP_ERROR",
+              }
+            : item,
+        ),
+      );
     }
   }
 
-  function restoreHistoryItem(item: AskHistoryItem) {
-    askMutation.reset();
-    setErrorCode(null);
-    setResult({
-      question: item.question,
-      productIds: item.productIds,
-      outcome: item.outcome,
-      response: item.response,
-    });
-    setViewState(item.outcome);
-  }
-
   return {
-    viewState,
-    result,
-    history,
-    errorCode,
+    turns,
     isPending,
-    isLoading,
+    isEmpty,
     submitAsk,
-    restoreHistoryItem,
   };
 }

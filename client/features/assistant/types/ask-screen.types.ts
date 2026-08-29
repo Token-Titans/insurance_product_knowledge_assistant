@@ -1,25 +1,12 @@
 import type { AskResponse } from "@/features/assistant/types/ask.types";
 
-export type AskViewState =
-  | "idle"
-  | "loading"
-  | "pending"
-  | "answered"
-  | "unavailable";
+export type ChatTurnStatus = "pending" | "answered" | "unavailable" | "error";
 
-export type AskOutcome = "answered" | "unavailable";
-
-export interface AskHistoryItem {
+export interface ChatTurn {
   id: string;
   question: string;
-  productIds: string[];
-  outcome: AskOutcome;
+  productId: string;
+  status: ChatTurnStatus;
   response: AskResponse | null;
-}
-
-export interface AskScreenResult {
-  question: string;
-  productIds: string[];
-  outcome: AskOutcome;
-  response: AskResponse | null;
+  errorCode: string | null;
 }

@@ -1,14 +1,23 @@
 "use client";
 
+import { HeartPulse, ShieldOff, Wallet, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
 import { SUGGESTED_QUESTIONS } from "@/features/assistant/constants/products";
 
 interface SuggestedQuestionsProps {
   disabled?: boolean;
   onSelect: (question: string) => void;
 }
+
+const SUGGESTION_ICONS: Record<
+  (typeof SUGGESTED_QUESTIONS)[number]["id"],
+  LucideIcon
+> = {
+  hospital: HeartPulse,
+  exclusion: ShieldOff,
+  unavailable: Wallet,
+};
 
 export function SuggestedQuestions({
   disabled = false,
@@ -17,21 +26,34 @@ export function SuggestedQuestions({
   const { t } = useTranslation("assistant");
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-muted-foreground">{t("ask.suggested_label")}</p>
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        {SUGGESTED_QUESTIONS.map((item) => (
-          <Button
-            key={item.id}
-            type="button"
-            variant="outline"
-            disabled={disabled}
-            className="h-auto max-w-full justify-start whitespace-normal font-myanmar text-left"
-            onClick={() => onSelect(t(item.labelKey))}
-          >
-            {t(item.labelKey)}
-          </Button>
-        ))}
+    <div className="space-y-3">
+      <p className="text-center text-xs text-muted-foreground">
+        {t("ask.suggested_label")}
+      </p>
+      <div className="grid gap-2 sm:grid-cols-3">
+        {SUGGESTED_QUESTIONS.map((item) => {
+          const Icon = SUGGESTION_ICONS[item.id];
+          const question = t(item.labelKey);
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              disabled={disabled}
+              aria-label={question}
+              className="flex h-full flex-col gap-2 rounded-2xl bg-card p-3 text-left ring-1 ring-border transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+              onClick={() => onSelect(question)}
+            >
+              <Icon className="size-4 text-primary" />
+              <span className="font-heading text-sm font-medium">
+                {t(item.titleKey)}
+              </span>
+              <span className="font-myanmar text-xs leading-relaxed text-muted-foreground">
+                {question}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
